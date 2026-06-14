@@ -3,14 +3,17 @@ package epd7in5v2
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"time"
 
 	"periph.io/x/conn/v3/driver/driverreg"
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
+	"periph.io/x/conn/v3/physic"
 	"periph.io/x/conn/v3/pin"
 	"periph.io/x/conn/v3/spi"
+	"periph.io/x/conn/v3/spi/spireg"
 )
 
 const (
@@ -68,14 +71,12 @@ const (
 )
 
 type Epd struct {
-	rst  gpio.PinOut
-	dc   gpio.PinOut
-	cs   gpio.PinOut
-	pwr  gpio.PinOut
-	busy gpio.PinIn
-	mosi gpio.PinOut
-	sclk gpio.PinOut
-	spi.Conn
+	rst       gpio.PinOut
+	dc        gpio.PinOut
+	pwr       gpio.PinOut
+	busy      gpio.PinIn
+	spi       spi.Conn
+	spiCloser io.Closer
 }
 
 func NewEPD() *Epd {
@@ -87,18 +88,34 @@ func (e *Epd) Init() error {
 		return fmt.Errorf("failed to initialize driver register: %w", err)
 	}
 
-	return all(
+	if err := tryAll(
 		"failed to initialize GPIO pins",
 		initPin(&e.rst, PinRST),
 		initPin(&e.dc, PinDC),
-		initPin(&e.cs, PinCS),
 		initPin(&e.pwr, PinPWR),
 		initPin(&e.busy, PinBUSY),
-		initPin(&e.mosi, PinMOSI),
-		initPin(&e.sclk, PinSCLK),
-		e.cs.Out(gpio.High),
 		e.pwr.Out(gpio.High),
-	)
+	); err != nil {
+		return err
+	}
+
+	p, err := spireg.Open("")
+	if err != nil {
+		return errors.Join(
+			e.closeGPIO(),
+			fmt.Errorf("failed to open SPI port: %w", err),
+		)
+	}
+	e.spiCloser = p
+
+	e.spi, err = p.Connect(10*physic.MegaHertz, spi.Mode0, 8)
+	if err != nil {
+		return errors.Join(
+			e.closeSPI(),
+			fmt.Errorf("failed to initialize SPI: %w", err),
+		)
+	}
+	return nil
 }
 
 func (e *Epd) Reset() error {
@@ -121,27 +138,38 @@ func (e *Epd) SendCommand(cmd Command) error {
 	if err := setPin(e.dc, gpio.Low); err != nil {
 		return err
 	}
-	if err := setPin(e.cs, gpio.Low); err != nil {
-		return err
-	}
-	//TODO: Write cmd to SPI
-	if err := setPin(e.cs, gpio.High); err != nil {
-		return err
+	if err := e.spi.Tx([]byte{byte(cmd)}, nil); err != nil {
+		return fmt.Errorf("failed to send command %s over SPI: %w", cmd, err)
 	}
 	return nil
 }
 
 func (e *Epd) Close() error {
-	return all(
-		"failed to uninitialize GPIO; some pins might have been left on HIGH",
-		e.cs.Out(gpio.Low),
+	return tryAll(
+		"failed to close device",
+		e.closeGPIO(),
+		e.spiCloser.Close(),
+	)
+}
+
+func (e *Epd) closeGPIO() error {
+	return tryAll(
+		"failed to close GPIO; some pins might have been left on HIGH",
+		//e.cs.Out(gpio.Low),
 		e.pwr.Out(gpio.Low),
 		e.dc.Out(gpio.Low),
 		e.rst.Out(gpio.Low),
 	)
 }
 
-func all(errMsg string, errs ...error) error {
+func (e *Epd) closeSPI() error {
+	if err := e.spiCloser.Close(); err != nil {
+		return fmt.Errorf("failed to close SPI port: %w", err)
+	}
+	return nil
+}
+
+func tryAll(errMsg string, errs ...error) error {
 	if err := errors.Join(errs...); err != nil {
 		return fmt.Errorf("%s: %w", errMsg, err)
 	}
