@@ -87,15 +87,13 @@ func (e *Epd) Init() error {
 		return fmt.Errorf("failed to initialize driver register: %w", err)
 	}
 
-	if err := tryAll(
-		"failed to initialize GPIO pins",
-		initPinOut(&e.rst, PinRST, gpio.Low),
-		initPinOut(&e.dc, PinDC, gpio.Low),
-		initPinOut(&e.pwr, PinPWR, gpio.High),
-		initPinIn(&e.busy, PinBUSY, gpio.PullNoChange, gpio.RisingEdge),
-		e.pwr.Out(gpio.High),
-	); err != nil {
-		return err
+	s := &seq{e: e}
+	s.initPinOut(&e.rst, PinRST, gpio.Low)
+	s.initPinOut(&e.dc, PinDC, gpio.Low)
+	s.initPinOut(&e.pwr, PinPWR, gpio.High)
+	s.initPinIn(&e.busy, PinBUSY, gpio.PullNoChange, gpio.RisingEdge)
+	if s.err != nil {
+		return fmt.Errorf("failed to initialize GPIO: %w", s.err)
 	}
 
 	p, err := spireg.Open("")
@@ -118,74 +116,53 @@ func (e *Epd) Init() error {
 }
 
 func (e *Epd) Reset() error {
-	if err := setPin(e.rst, gpio.High); err != nil {
-		return err
-	}
-	time.Sleep(20 * time.Millisecond)
-	if err := setPin(e.rst, gpio.Low); err != nil {
-		return err
-	}
-	time.Sleep(2 * time.Millisecond)
-	if err := setPin(e.rst, gpio.High); err != nil {
-		return err
-	}
-	time.Sleep(20 * time.Millisecond)
-	return nil
+	s := &seq{e: e}
+	s.setPin(e.rst, gpio.High)
+	s.sleep(20 * time.Millisecond)
+	s.setPin(e.rst, gpio.Low)
+	s.sleep(2 * time.Millisecond)
+	s.setPin(e.rst, gpio.High)
+	s.sleep(20 * time.Millisecond)
+	return s.err
 }
 
 func (e *Epd) SendCommand(cmd Command) error {
-	if err := setPin(e.dc, gpio.Low); err != nil {
-		return err
-	}
-	if err := e.spi.Tx([]byte{byte(cmd)}, nil); err != nil {
-		return fmt.Errorf("failed to send command %s over SPI: %w", cmd, err)
-	}
-	return nil
+	s := &seq{e: e}
+	s.sendCommand(cmd)
+	return s.err
 }
 
 func (e *Epd) SendData(data ...byte) error {
-	if err := setPin(e.dc, gpio.High); err != nil {
-		return err
-	}
-	if err := e.spi.Tx(data, nil); err != nil {
-		return fmt.Errorf("failed to send data (%d bytes) over SPI: %w", len(data), err)
-	}
-	return nil
-}
-
-func (e *Epd) Wait() {
-	//TODO: Should timeout be moved to client?
-	e.busy.WaitForEdge(time.Second * 10)
+	s := &seq{e: e}
+	s.sendData(data)
+	return s.err
 }
 
 func (e *Epd) TurnOn() error {
-	if err := e.DisplayRefresh(); err != nil {
-		return err
-	}
-	time.Sleep(10 * time.Millisecond)
-	e.Wait()
-	return nil
+	s := &seq{e: e}
+	s.displayRefresh()
+	s.sleep(10 * time.Millisecond)
+	s.wait()
+	return s.err
 }
 
 func (e *Epd) DisplayRefresh() error {
-	if err := e.SendCommand(CommandDRF); err != nil {
-		return err
-	}
-	return nil
+	s := &seq{e: e}
+	s.displayRefresh()
+	return s.err
 }
 
 func (e *Epd) Close() error {
 	return tryAll(
 		"failed to close device",
 		e.closeGPIO(),
-		e.spiCloser.Close(),
+		e.closeSPI(),
 	)
 }
 
 func (e *Epd) closeGPIO() error {
 	return tryAll(
 		"failed to close GPIO; some pins might have been left on HIGH",
-		//e.cs.Out(gpio.Low),
 		e.pwr.Out(gpio.Low),
 		e.dc.Out(gpio.Low),
 		e.rst.Out(gpio.Low),
@@ -206,41 +183,89 @@ func tryAll(errMsg string, errs ...error) error {
 	return nil
 }
 
-func setPin(pin gpio.PinOut, level gpio.Level) error {
-	if err := pin.Out(level); err != nil {
-		return fmt.Errorf("failed to set %s to %s", pin.Name(), gpio.High)
-	}
-	return nil
+type seq struct {
+	e   *Epd
+	err error
 }
 
-func initPinOut(pin *gpio.PinOut, pinNum int, init gpio.Level) error {
+func (s *seq) setPin(pin gpio.PinOut, level gpio.Level) {
+	if s.err != nil {
+		return
+	}
+	if err := pin.Out(level); err != nil {
+		err = fmt.Errorf("failed to set %s to %s", pin.Name(), gpio.High)
+	}
+}
+
+func (s *seq) initPinOut(pin *gpio.PinOut, pinNum int, init gpio.Level) {
 	pinIO := gpioreg.ByName(strconv.Itoa(pinNum))
 	if pinIO == nil {
-		return fmt.Errorf("failed to find GPIO%d", pinNum)
+		s.err = fmt.Errorf("failed to find GPIO%d", pinNum)
+		return
 	}
 	var ok bool
 	*pin, ok = pinIO.(gpio.PinOut)
 	if !ok {
-		return fmt.Errorf("invalid pin type of GPIO%d, expected %T", pinNum, pin)
+		s.err = fmt.Errorf("invalid pin type of GPIO%d, expected %T", pinNum, pin)
+		return
 	}
-	if err := setPin(*pin, init); err != nil {
-		return fmt.Errorf("failed to initialize output pin GPIO%d: %w", pinNum, err)
-	}
-	return nil
+	s.setPin(*pin, init)
 }
 
-func initPinIn(pin *gpio.PinIn, pinNum int, pull gpio.Pull, edge gpio.Edge) error {
+func (s *seq) initPinIn(pin *gpio.PinIn, pinNum int, pull gpio.Pull, edge gpio.Edge) {
 	pinIO := gpioreg.ByName(strconv.Itoa(pinNum))
 	if pinIO == nil {
-		return fmt.Errorf("failed to find GPIO%d", pinNum)
+		s.err = fmt.Errorf("failed to find GPIO%d", pinNum)
+		return
 	}
 	var ok bool
 	*pin, ok = pinIO.(gpio.PinIn)
 	if !ok {
-		return fmt.Errorf("invalid pin type of GPIO%d, expected %T", pinNum, pin)
+		s.err = fmt.Errorf("invalid pin type of GPIO%d, expected %T", pinNum, pin)
+		return
 	}
 	if err := (*pin).In(pull, edge); err != nil {
-		return fmt.Errorf("failed to initialize input pin GPIO%d: %w", pinNum, err)
+		s.err = fmt.Errorf("failed to initialize input pin GPIO%d: %w", pinNum, err)
+		return
 	}
-	return nil
+}
+
+func (s *seq) sleep(dur time.Duration) {
+	if s.err != nil {
+		return
+	}
+	time.Sleep(dur)
+}
+
+func (s *seq) sendCommand(cmd Command) {
+	s.setPin(s.e.dc, gpio.Low)
+	if s.err != nil {
+		return
+	}
+	if err := s.e.spi.Tx([]byte{byte(cmd)}, nil); err != nil {
+		err = fmt.Errorf("failed to send command %s over SPI: %w", cmd, err)
+	}
+}
+
+func (s *seq) sendData(data []byte) {
+	s.setPin(s.e.dc, gpio.High)
+	if s.err != nil {
+		return
+	}
+	if err := s.e.spi.Tx(data, nil); err != nil {
+		s.err = fmt.Errorf("failed to send data (%d bytes) over SPI: %w", len(data), err)
+	}
+}
+
+func (s *seq) wait() {
+	if s.err != nil {
+		return
+	}
+	if !s.e.busy.WaitForEdge(time.Second * 10) {
+		s.err = fmt.Errorf("waiting for %s input pin timed out", s.e.busy.Name())
+	}
+}
+
+func (s *seq) displayRefresh() {
+	s.sendCommand(CommandDRF)
 }
