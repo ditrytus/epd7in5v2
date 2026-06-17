@@ -154,7 +154,24 @@ func (e *Epd) SendData(data ...byte) error {
 }
 
 func (e *Epd) Wait() {
+	//TODO: Should timeout be moved to client?
 	e.busy.WaitForEdge(time.Second * 10)
+}
+
+func (e *Epd) TurnOn() error {
+	if err := e.DisplayRefresh(); err != nil {
+		return err
+	}
+	time.Sleep(10 * time.Millisecond)
+	e.Wait()
+	return nil
+}
+
+func (e *Epd) DisplayRefresh() error {
+	if err := e.SendCommand(CommandDRF); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (e *Epd) Close() error {
