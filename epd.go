@@ -11,7 +11,6 @@ import (
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
 	"periph.io/x/conn/v3/physic"
-	"periph.io/x/conn/v3/pin"
 	"periph.io/x/conn/v3/spi"
 	"periph.io/x/conn/v3/spi/spireg"
 )
@@ -90,10 +89,10 @@ func (e *Epd) Init() error {
 
 	if err := tryAll(
 		"failed to initialize GPIO pins",
-		initPin(&e.rst, PinRST),
-		initPin(&e.dc, PinDC),
-		initPin(&e.pwr, PinPWR),
-		initPin(&e.busy, PinBUSY),
+		initPinOut(&e.rst, PinRST, gpio.Low),
+		initPinOut(&e.dc, PinDC, gpio.Low),
+		initPinOut(&e.pwr, PinPWR, gpio.High),
+		initPinIn(&e.busy, PinBUSY, gpio.PullNoChange, gpio.RisingEdge),
 		e.pwr.Out(gpio.High),
 	); err != nil {
 		return err
@@ -144,6 +143,20 @@ func (e *Epd) SendCommand(cmd Command) error {
 	return nil
 }
 
+func (e *Epd) SendData(data ...byte) error {
+	if err := setPin(e.dc, gpio.High); err != nil {
+		return err
+	}
+	if err := e.spi.Tx(data, nil); err != nil {
+		return fmt.Errorf("failed to send data (%d bytes) over SPI: %w", len(data), err)
+	}
+	return nil
+}
+
+func (e *Epd) Wait() {
+	e.busy.WaitForEdge(time.Second * 10)
+}
+
 func (e *Epd) Close() error {
 	return tryAll(
 		"failed to close device",
@@ -183,15 +196,34 @@ func setPin(pin gpio.PinOut, level gpio.Level) error {
 	return nil
 }
 
-func initPin[T pin.Pin](pin *T, pinNum int) error {
+func initPinOut(pin *gpio.PinOut, pinNum int, init gpio.Level) error {
 	pinIO := gpioreg.ByName(strconv.Itoa(pinNum))
 	if pinIO == nil {
 		return fmt.Errorf("failed to find GPIO%d", pinNum)
 	}
 	var ok bool
-	*pin, ok = pinIO.(T)
+	*pin, ok = pinIO.(gpio.PinOut)
 	if !ok {
-		return fmt.Errorf("invalid pin type of GPIO%d", pinNum)
+		return fmt.Errorf("invalid pin type of GPIO%d, expected %T", pinNum, pin)
+	}
+	if err := setPin(*pin, init); err != nil {
+		return fmt.Errorf("failed to initialize output pin GPIO%d: %w", pinNum, err)
+	}
+	return nil
+}
+
+func initPinIn(pin *gpio.PinIn, pinNum int, pull gpio.Pull, edge gpio.Edge) error {
+	pinIO := gpioreg.ByName(strconv.Itoa(pinNum))
+	if pinIO == nil {
+		return fmt.Errorf("failed to find GPIO%d", pinNum)
+	}
+	var ok bool
+	*pin, ok = pinIO.(gpio.PinIn)
+	if !ok {
+		return fmt.Errorf("invalid pin type of GPIO%d, expected %T", pinNum, pin)
+	}
+	if err := (*pin).In(pull, edge); err != nil {
+		return fmt.Errorf("failed to initialize input pin GPIO%d: %w", pinNum, err)
 	}
 	return nil
 }
