@@ -69,6 +69,144 @@ const (
 	CommandTSDBRY = 0xE7 // Temperature Boundary Phase-C2
 )
 
+type PwrArgs byte
+
+type BdEn PwrArgs // Border LDO enable
+
+const (
+	BdEnDisable BdEn = 0      // Border LDO disable
+	BdEnEnable  BdEn = 1 << 4 // Border LDO enable
+	BdEnDefault      = BdEnDisable
+)
+
+type VsrEn PwrArgs // Source LV power selection
+
+const (
+	VsrEnExternal VsrEn = 0      // External source power from VDHR pins
+	VsrEnInternal VsrEn = 1 << 2 // Internal DC/DC function for generating VDHR.
+	VsrEnDefault        = VsrEnInternal
+)
+
+type VsEn PwrArgs // Source power selection
+
+const (
+	VsEnExternal VsEn = 0      // External source power from VDH/VDL pins
+	VsEnInternal VsEn = 1 << 1 // Internal DC/DC function for generating VDH/VDL.
+	VsEnDefault       = VsEnInternal
+)
+
+type VgEn PwrArgs // Gate power selection
+
+const (
+	VgEnExternal = 0      // External gate power from VGH/VGL pins
+	VgEnInternal = 1 << 0 // Internal DC/DC function for generating VGH/VGL.
+	VgEnDefault  = VgEnInternal
+)
+
+type VppEn PwrArgs // OTP program power selection
+
+const (
+	VppEnExternalOTP VppEn = 0      // External OTP program power from VPP pin
+	VppEnInternalOTP VppEn = 1 << 7 // OTP program power from internal power circuit.
+)
+
+type VCOMSlew PwrArgs // VCOM slew rate selection for voltage transition
+
+const (
+	VCOMSlewSlow VCOMSlew = 0 //Slow slew rate
+	VCOMSlewFast VCOMSlew = 1 << 4
+)
+
+type VgLvl PwrArgs // VGH / VGL Voltage Level selection.
+
+const (
+	VgLvl9V  VgLvl = 0b000
+	VgLvl10V VgLvl = 0b001
+	VgLvl11V VgLvl = 0b010
+	VgLvl12V VgLvl = 0b011
+	VgLvl17V VgLvl = 0b100
+	VgLvl18V VgLvl = 0b101
+	VgLvl19V VgLvl = 0b110
+	VgLvl20V VgLvl = 0b111
+)
+
+type VoltageLvl PwrArgs // Internal VDH power selection for K/W pixel.
+
+const (
+	VoltageLvl2_4V VoltageLvl = iota
+	VoltageLvl2_6V
+	VoltageLvl2_8V
+	VoltageLvl3_0V
+	VoltageLvl3_2V
+	VoltageLvl3_4V
+	VoltageLvl3_6V
+	VoltageLvl3_8V
+	VoltageLvl4_0V
+	VoltageLvl4_2V
+	VoltageLvl4_4V
+	VoltageLvl4_6V
+	VoltageLvl4_8V
+	VoltageLvl5_0V
+	VoltageLvl5_2V
+	VoltageLvl5_4V
+	VoltageLvl5_6V
+	VoltageLvl5_8V
+	VoltageLvl6_0V
+	VoltageLvl6_2V
+	VoltageLvl6_4V
+	VoltageLvl6_6V
+	VoltageLvl6_8V
+	VoltageLvl7_0V
+	VoltageLvl7_2V
+	VoltageLvl7_4V
+	VoltageLvl7_6V
+	VoltageLvl7_8V
+	VoltageLvl8_0V
+	VoltageLvl8_2V
+	VoltageLvl8_4V
+	VoltageLvl8_6V
+	VoltageLvl8_8V
+	VoltageLvl9_0V
+	VoltageLvl9_2V
+	VoltageLvl9_4V
+	VoltageLvl9_6V
+	VoltageLvl9_8V
+	VoltageLvl10_0V
+	VoltageLvl10_2V
+	VoltageLvl10_4V
+	VoltageLvl10_6V
+	VoltageLvl10_8V
+	VoltageLvl11_0V
+	VoltageLvl11_2V
+	VoltageLvl11_4V
+	VoltageLvl11_6V
+	VoltageLvl11_8V
+	VoltageLvl12_0V
+	VoltageLvl12_2V
+	VoltageLvl12_4V
+	VoltageLvl12_6V
+	VoltageLvl12_8V
+	VoltageLvl13_0V
+	VoltageLvl13_2V
+	VoltageLvl13_4V
+	VoltageLvl13_6V
+	VoltageLvl13_8V
+	VoltageLvl14_0V
+	VoltageLvl14_2V
+	VoltageLvl14_4V
+	VoltageLvl14_6V
+	VoltageLvl14_8V
+	VoltageLvl15_0V
+)
+
+type VdhLvl VoltageLvl //  Internal VDH power selection for K/W pixel.
+
+const VdhLvlDefault = VdhLvl(VoltageLvl14_0V)
+
+type VdlLvl VoltageLvl // Internal VDL power selection for K/W pixel.
+
+const VdlLvlDefault = VdlLvl(VoltageLvl14_0V)
+
 type Epd struct {
 	rst       gpio.PinOut
 	dc        gpio.PinOut
@@ -82,7 +220,7 @@ func NewEPD() *Epd {
 	return &Epd{}
 }
 
-func (e *Epd) Init() error {
+func (e *Epd) GPIOInit() error {
 	if _, err := driverreg.Init(); err != nil {
 		return fmt.Errorf("failed to initialize driver register: %w", err)
 	}
@@ -117,13 +255,17 @@ func (e *Epd) Init() error {
 
 func (e *Epd) Reset() error {
 	s := &seq{e: e}
-	s.setPin(e.rst, gpio.High)
-	s.sleep(20 * time.Millisecond)
-	s.setPin(e.rst, gpio.Low)
-	s.sleep(2 * time.Millisecond)
-	s.setPin(e.rst, gpio.High)
-	s.sleep(20 * time.Millisecond)
+	s.reset()
 	return s.err
+}
+
+func (s *seq) reset() {
+	s.setPin(s.e.rst, gpio.High)
+	s.sleep(20 * time.Millisecond)
+	s.setPin(s.e.rst, gpio.Low)
+	s.sleep(2 * time.Millisecond)
+	s.setPin(s.e.rst, gpio.High)
+	s.sleep(20 * time.Millisecond)
 }
 
 func (e *Epd) SendCommand(cmd Command) error {
@@ -144,6 +286,24 @@ func (e *Epd) TurnOn() error {
 	s.sleep(10 * time.Millisecond)
 	s.wait()
 	return s.err
+}
+
+func (e *Epd) InitRegister() error {
+	s := &seq{e: e}
+	s.reset()
+	s.powerSetting(
+		BdEnDefault,
+		VsrEnDefault,
+		VsEnDefault,
+		VgEnDefault,
+		VppEnExternalOTP,
+		VCOMSlewSlow,
+		VgLvl20V,
+		VdhLvl(VoltageLvl15_0V),
+		VdlLvl(VoltageLvl15_0V),
+	)
+	s.boosterSoftStart()
+	//TODO: Continue HERE!
 }
 
 func (e *Epd) DisplayRefresh() error {
@@ -268,4 +428,122 @@ func (s *seq) wait() {
 
 func (s *seq) displayRefresh() {
 	s.sendCommand(CommandDRF)
+}
+
+func (s *seq) powerSetting(
+	borderLDO BdEn,
+	sourceLVPower VsrEn,
+	sourcePower VsEn,
+	gatePower VgEn,
+	otpProgram VppEn,
+	vcomSlew VCOMSlew,
+	vgVoltage VgLvl,
+	vdhKWVoltage VdhLvl,
+	vdlKWVoltage VdlLvl,
+) {
+	if s.err != nil {
+		return
+	}
+	s.sendCommand(CommandPWR)
+	s.sendData([]byte{
+		byte(borderLDO) | byte(sourceLVPower) | byte(sourcePower) | byte(gatePower),
+		byte(otpProgram) | byte(vcomSlew) | byte(vgVoltage),
+		byte(vdhKWVoltage),
+		byte(vdlKWVoltage),
+	})
+}
+
+func (s *seq) boosterSoftStart(settings BoosterSoftStartSettings) {
+	if s.err != nil {
+		return
+	}
+	s.sendCommand(CommandBTST)
+	s.sendData(settings.Flags())
+}
+
+type BoosterSoftStartSettings struct {
+	PhaseA  PhaseABSettings
+	PhaseB  PhaseABSettings
+	PhaseC1 PhaseCSettings
+	PhaseC2 PhaseC2Settings
+}
+
+func (s BoosterSoftStartSettings) Flags() []byte {
+	return []byte{
+		s.PhaseA.Flags(),
+		s.PhaseB.Flags(),
+		s.PhaseC1.Flags(),
+		s.PhaseC2.Flags(),
+	}
+}
+
+type StartPeriod byte
+
+const (
+	StartPeriod_10ms StartPeriod = 0b00
+	StartPeriod_20ms StartPeriod = 0b01
+	StartPeriod_30ms StartPeriod = 0b10
+	StartPeriod_40ms StartPeriod = 0b11
+)
+
+type Strength byte
+
+const (
+	Strength_1 Strength = 0b000
+	Strength_2 Strength = 0b001
+	Strength_3 Strength = 0b010
+	Strength_4 Strength = 0b011
+	Strength_5 Strength = 0b100
+	Strength_6 Strength = 0b101
+	Strength_7 Strength = 0b110
+	Strength_8 Strength = 0b111
+)
+
+type OffDuration byte
+
+const (
+	OffDuration_0_27us OffDuration = 0b000
+	OffDuration_0_34us OffDuration = 0b001
+	OffDuration_0_40us OffDuration = 0b010
+	OffDuration_0_54us OffDuration = 0b011
+	OffDuration_0_80us OffDuration = 0b100
+	OffDuration_1_54us OffDuration = 0b101
+	OffDuration_3_34us OffDuration = 0b110
+	OffDuration_6_58us OffDuration = 0b111
+)
+
+type PhaseSettings struct {
+	DrivingStrength   Strength
+	MinGDROffDuration OffDuration
+}
+
+func (s PhaseSettings) Flags() byte {
+	return byte(s.DrivingStrength)<<3 | byte(s.MinGDROffDuration)
+}
+
+type PhaseABSettings struct {
+	SoftStartPeriod StartPeriod
+	PhaseSettings
+}
+
+func (s PhaseABSettings) Flags() byte {
+	return byte(s.SoftStartPeriod)<<6 | s.PhaseSettings.Flags()
+}
+
+type PhaseCSettings = PhaseSettings
+
+type PhaseC2Settings struct {
+	Enabled bool
+	PhaseCSettings
+}
+
+func boolToByte(b bool) byte {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func (s PhaseC2Settings) Flags() byte {
+	return boolToByte(s.Enabled)<<7 | s.PhaseCSettings.Flags()
 }
