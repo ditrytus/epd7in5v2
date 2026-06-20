@@ -204,7 +204,9 @@ func (e *Epd) InitRegister() error {
 		},
 	})
 	s.powerON()
-	s.panelSetting()
+	panelSettings := NewDefaultPanelSettings()
+	panelSettings.ColorMode = ColorMode_BlackWhite
+	s.panelSetting(panelSettings)
 	return s.err
 }
 
@@ -499,8 +501,76 @@ func (s *seq) powerON() {
 	s.wait()
 }
 
-func (s *seq) panelSetting() {
+type LookupTableSource byte
 
+const (
+	LookupTableSource_OTP      LookupTableSource = 0
+	LookupTableSource_Register LookupTableSource = 1
+)
+
+type ColorMode byte
+
+const (
+	ColorMode_BlackWhiteRed ColorMode = 0
+	ColorMode_BlackWhite    ColorMode = 1
+)
+
+type VerticalDirection byte
+
+const (
+	Up   VerticalDirection = 0
+	Down VerticalDirection = 1
+)
+
+type HorizontalDirection byte
+
+const (
+	Left  HorizontalDirection = 0
+	Right HorizontalDirection = 1
+)
+
+type ResetBehavior byte
+
+const (
+	Reset    ResetBehavior = 0
+	NoEffect ResetBehavior = 1
+)
+
+type PanelSettings struct {
+	LookupTableSource    LookupTableSource
+	ColorMode            ColorMode
+	GateScanDirection    VerticalDirection
+	SourceShiftDirection HorizontalDirection
+	BoosterEnabled       bool
+	SoftReset            ResetBehavior
+}
+
+func NewDefaultPanelSettings() PanelSettings {
+	return PanelSettings{
+		LookupTableSource:    LookupTableSource_OTP,
+		ColorMode:            ColorMode_BlackWhiteRed,
+		GateScanDirection:    Up,
+		SourceShiftDirection: Right,
+		BoosterEnabled:       true,
+		SoftReset:            NoEffect,
+	}
+}
+
+func (s PanelSettings) Flags() byte {
+	return byte(s.LookupTableSource)<<5 |
+		byte(s.ColorMode)<<4 |
+		byte(s.GateScanDirection)<<3 |
+		byte(s.SourceShiftDirection)<<2 |
+		boolToByte(s.BoosterEnabled)<<1 |
+		byte(s.SoftReset)
+}
+
+func (s *seq) panelSetting(settings PanelSettings) {
+	if s.err != nil {
+		return
+	}
+	s.sendCommand(CommandPSR)
+	s.sendData([]byte{settings.Flags()})
 }
 
 type BoosterSoftStartSettings struct {
