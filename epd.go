@@ -1,6 +1,7 @@
 package epd7in5v2
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -84,6 +85,11 @@ const (
 	CommandLVSEL  = 0xE4 // LVD Voltage Select
 	CommandTSSET  = 0xE5 // Force Temperature
 	CommandTSDBRY = 0xE7 // Temperature Boundary Phase-C2
+)
+
+const (
+	ScreenWidth  Resolution = 800
+	ScreenHeight Resolution = 480
 )
 
 type Epd struct {
@@ -207,8 +213,28 @@ func (e *Epd) InitRegister() error {
 	panelSettings := NewDefaultPanelSettings()
 	panelSettings.ColorMode = ColorMode_BlackWhite
 	s.panelSetting(panelSettings)
+	s.resolutionSetting(ResolutionSettings{
+		Horizontal: ScreenWidth,
+		Vertical:   ScreenHeight,
+	})
+	s.commonVoltageAndDataIntervalSetting(CDISettings{
+		ColorMode: BlackWhiteSettings{
+			Refresh: DifferentialRefresh{
+				CopyNewToOld: false,
+			},
+			Border: Driven[BlackWhiteBorder]{
+				LookupTable: BlackWhiteBorder_BlackToWhite,
+			},
+		},
+		BlackWhitePolarity:        BlackWhitePolarity_ZeroIsWhite,
+		CommonVoltageDataInterval: 10 * HSync,
+	})
 	return s.err
 }
+
+type HSyncInterval int
+
+const HSync HSyncInterval = 1
 
 func (e *Epd) DisplayRefresh() error {
 	s := &seq{e: e}
@@ -571,6 +597,154 @@ func (s *seq) panelSetting(settings PanelSettings) {
 	}
 	s.sendCommand(CommandPSR)
 	s.sendData([]byte{settings.Flags()})
+}
+
+type Resolution uint16
+
+const (
+	MinHorizontalRes Resolution = 1
+	MaxHorizontalRes Resolution = 800
+	MinVerticalRes   Resolution = 1
+	MaxVerticalRes   Resolution = 600
+)
+
+type ResolutionSettings struct {
+	Horizontal Resolution
+	Vertical   Resolution
+}
+
+func (rs ResolutionSettings) Flags() ([]byte, error) {
+	if rs.Horizontal < MinHorizontalRes {
+		return nil, fmt.Errorf("horizontal resolution must not be lower than %d", MinHorizontalRes)
+	}
+	if rs.Horizontal > MaxHorizontalRes {
+		return nil, fmt.Errorf("horizontal resolution must not be greater than %d", MaxHorizontalRes)
+	}
+	if rs.Vertical < MinVerticalRes {
+		return nil, fmt.Errorf("vertical resolution must not be lower than %d", MinVerticalRes)
+	}
+	if rs.Horizontal > MaxHorizontalRes {
+		return nil, fmt.Errorf("vertical resolution must not be greater than %d", MaxVerticalRes)
+	}
+	if rs.Horizontal%8 != 0 {
+		return nil, fmt.Errorf("horizontal resolution must be divisible by 8")
+	}
+	flags := make([]byte, 0, 4)
+	binary.BigEndian.AppendUint16(flags, uint16(rs.Horizontal))
+	binary.BigEndian.AppendUint16(flags, uint16(rs.Vertical))
+	return flags, nil
+}
+
+func (s *seq) resolutionSetting(settings ResolutionSettings) {
+	if s.err != nil {
+		return
+	}
+	s.sendCommand(CommandTRES)
+	data, err := settings.Flags()
+	if s.err == nil && err != nil {
+		s.err = err
+		return
+	}
+	s.sendData(data)
+
+}
+
+type ColorModeSettings interface {
+	isColorModeSettings()
+}
+
+type BlackWhiteRedSettings struct {
+	RedPolarity RedPolarity
+	Border      Border[BlackWhiteRedBorder]
+}
+
+func (s BlackWhiteRedSettings) isColorModeSettings() {}
+
+type Refresh interface {
+	isRefresh()
+}
+
+type FullRefresh struct{}
+
+func (f FullRefresh) isRefresh() {}
+
+type DifferentialRefresh struct {
+	CopyNewToOld bool
+}
+
+func (d DifferentialRefresh) isRefresh() {}
+
+type BlackWhiteSettings struct {
+	Refresh Refresh
+	Border  Border[BlackWhiteBorder]
+}
+
+func (s BlackWhiteSettings) isColorModeSettings() {}
+
+type BlackWhitePolarity byte
+
+const (
+	BlackWhitePolarity_ZeroIsBlack BlackWhitePolarity = iota
+	BlackWhitePolarity_ZeroIsWhite
+)
+
+type RedPolarity byte
+
+type ColorModeBorder interface {
+	isColorModeBorder()
+}
+
+type BlackWhiteRedBorder byte
+
+func (b BlackWhiteRedBorder) isColorModeBorder() {}
+
+const (
+	BlackWhiteRedBorder_Border BlackWhiteRedBorder = iota
+	BlackWhiteRedBorder_Red
+	BlackWhiteRedBorder_White
+	BlackWhiteRedBorder_Black
+)
+
+type BlackWhiteBorder byte
+
+func (b BlackWhiteBorder) isColorModeBorder() {}
+
+const (
+	BlackWhiteBorder_Border BlackWhiteBorder = iota
+	BlackWhiteBorder_BlackToWhite
+	BlackWhiteBorder_WhiteToBlack
+	BlackWhiteBorder_BlackToBlack
+)
+
+type Border[T ColorModeBorder] interface {
+	isBorder()
+}
+
+type Float struct{}
+
+func (f Float) isBorder() {}
+
+type Driven[T ColorModeBorder] struct {
+	LookupTable T
+}
+
+func (f Driven[T]) isBorder() {}
+
+const (
+	ZeroIsRed RedPolarity = iota
+	OneIsRed
+)
+
+type CommonVoltageDataInterval byte
+
+type CDISettings struct {
+	ColorMode                 ColorModeSettings
+	BlackWhitePolarity        BlackWhitePolarity
+	CommonVoltageDataInterval HSyncInterval
+}
+
+func (s *seq) commonVoltageAndDataIntervalSetting(settings CDISettings) {
+
 }
 
 type BoosterSoftStartSettings struct {
