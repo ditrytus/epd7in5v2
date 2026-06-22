@@ -651,6 +651,10 @@ func (s *seq) resolutionSetting(settings ResolutionSettings) {
 
 type ColorModeSettings interface {
 	isColorModeSettings()
+	N2OCP() byte
+	DDX1() byte
+	BDV(polarity BlackWhitePolarity) byte
+	BDZ() byte
 }
 
 type BlackWhiteRedSettings struct {
@@ -658,19 +662,69 @@ type BlackWhiteRedSettings struct {
 	Border      Border[BlackWhiteRedBorder]
 }
 
+func (s BlackWhiteRedSettings) BDZ() byte {
+	return s.Border.BDZ()
+}
+
+func (s BlackWhiteRedSettings) BDV(polarity BlackWhitePolarity) byte {
+	return s.Border.BDV(func(border BlackWhiteRedBorder) byte {
+		bdv, ok := cdi_bdv_kwr[polarity][border]
+		if !ok {
+			panic("invalid polarity border combination")
+		}
+		return bdv
+	})
+}
+
+func (s BlackWhiteRedSettings) N2OCP() byte {
+	return 0
+}
+
+func (s BlackWhiteRedSettings) DDX1() byte {
+	return byte(s.RedPolarity)
+}
+
+//func (s BlackWhiteRedSettings) BorderBehavior() Border[ColorModeBorder] {
+//	return s.Border
+//}
+
 func (s BlackWhiteRedSettings) isColorModeSettings() {}
+
+var _ ColorModeSettings = BlackWhiteRedSettings{}
 
 type Refresh interface {
 	isRefresh()
+	DDX1() byte
+	N2OCP() byte
 }
 
 type FullRefresh struct{}
+
+func (f FullRefresh) N2OCP() byte {
+	return 0
+}
+
+func (f FullRefresh) DDX1() byte {
+	return 1
+}
+
+var _ Refresh = FullRefresh{}
 
 func (f FullRefresh) isRefresh() {}
 
 type DifferentialRefresh struct {
 	CopyNewToOld bool
 }
+
+func (d DifferentialRefresh) N2OCP() byte {
+	return boolToByte(d.CopyNewToOld)
+}
+
+func (d DifferentialRefresh) DDX1() byte {
+	return 0
+}
+
+var _ Refresh = DifferentialRefresh{}
 
 func (d DifferentialRefresh) isRefresh() {}
 
@@ -679,13 +733,41 @@ type BlackWhiteSettings struct {
 	Border  Border[BlackWhiteBorder]
 }
 
+func (s BlackWhiteSettings) BDZ() byte {
+	return s.Border.BDZ()
+}
+
+func (s BlackWhiteSettings) BDV(polarity BlackWhitePolarity) byte {
+	return s.Border.BDV(func(border BlackWhiteBorder) byte {
+		bdv, ok := cdi_bdy_kw[polarity][border]
+		if !ok {
+			panic("invalid polarity border combination")
+		}
+		return bdv
+	})
+}
+
+func (s BlackWhiteSettings) N2OCP() byte {
+	return s.Refresh.N2OCP()
+}
+
+func (s BlackWhiteSettings) DDX1() byte {
+	return s.Refresh.DDX1()
+}
+
+//func (s BlackWhiteSettings) BorderBehavior() Border[ColorModeBorder] {
+//	return s.Border
+//}
+
 func (s BlackWhiteSettings) isColorModeSettings() {}
+
+var _ ColorModeSettings = BlackWhiteSettings{}
 
 type BlackWhitePolarity byte
 
 const (
-	BlackWhitePolarity_ZeroIsBlack BlackWhitePolarity = iota
-	BlackWhitePolarity_ZeroIsWhite
+	BlackWhitePolarity_ZeroIsWhite BlackWhitePolarity = 0
+	BlackWhitePolarity_ZeroIsBlack BlackWhitePolarity = 1
 )
 
 type RedPolarity byte
@@ -718,21 +800,43 @@ const (
 
 type Border[T ColorModeBorder] interface {
 	isBorder()
+	BDV(func(border T) byte) byte
+	BDZ() byte
 }
 
-type Float struct{}
+type Float[T ColorModeBorder] struct{}
 
-func (f Float) isBorder() {}
+func (f Float[T]) BDZ() byte {
+	return 1
+}
+
+func (f Float[T]) BDV(func(border T) byte) byte {
+	return 0
+}
+
+func (f Float[T]) isBorder() {}
+
+var _ Border[ColorModeBorder] = Float[ColorModeBorder]{}
 
 type Driven[T ColorModeBorder] struct {
 	LookupTable T
 }
 
-func (f Driven[T]) isBorder() {}
+func (d Driven[T]) BDZ() byte {
+	return 1
+}
+
+func (d Driven[T]) BDV(f func(border T) byte) byte {
+	return f(d.LookupTable)
+}
+
+func (d Driven[T]) isBorder() {}
+
+var _ Border[ColorModeBorder] = Driven[ColorModeBorder]{}
 
 const (
-	ZeroIsRed RedPolarity = iota
-	OneIsRed
+	RedPolarity_OneIsRed  RedPolarity = 0
+	RedPolarity_ZeroIsRed RedPolarity = 1
 )
 
 type CommonVoltageDataInterval byte
@@ -743,8 +847,65 @@ type CDISettings struct {
 	CommonVoltageDataInterval HSyncInterval
 }
 
-func (s *seq) commonVoltageAndDataIntervalSetting(settings CDISettings) {
+func (s CDISettings) Flags() []byte {
+	return []byte{
+		s.BDZ() << 7, s.BDV() << 4, s.N2OCP() << 3, s.DDX(),
+		//TODO: CDI
+	}
+}
 
+func (s CDISettings) BDZ() byte {
+	return s.ColorMode.BDZ()
+}
+
+var cdi_bdv_kwr = map[BlackWhitePolarity]map[BlackWhiteRedBorder]byte{
+	BlackWhitePolarity_ZeroIsBlack: {
+		BlackWhiteRedBorder_Border: 0b00,
+		BlackWhiteRedBorder_Red:    0b01,
+		BlackWhiteRedBorder_White:  0b10,
+		BlackWhiteRedBorder_Black:  0b11,
+	},
+	BlackWhitePolarity_ZeroIsWhite: {
+		BlackWhiteRedBorder_Black:  0b00,
+		BlackWhiteRedBorder_White:  0b01,
+		BlackWhiteRedBorder_Red:    0b10,
+		BlackWhiteRedBorder_Border: 0b11,
+	},
+}
+
+var cdi_bdy_kw = map[BlackWhitePolarity]map[BlackWhiteBorder]byte{
+	BlackWhitePolarity_ZeroIsBlack: {
+		BlackWhiteBorder_Border:       0b00,
+		BlackWhiteBorder_BlackToWhite: 0b01,
+		BlackWhiteBorder_WhiteToBlack: 0b10,
+		BlackWhiteBorder_BlackToBlack: 0b11,
+	},
+	BlackWhitePolarity_ZeroIsWhite: {
+		BlackWhiteBorder_BlackToBlack: 0b00,
+		BlackWhiteBorder_WhiteToBlack: 0b01,
+		BlackWhiteBorder_BlackToWhite: 0b10,
+		BlackWhiteBorder_Border:       0b11,
+	},
+}
+
+func (s CDISettings) BDV() byte {
+	return s.ColorMode.BDV(s.BlackWhitePolarity)
+}
+
+func (s CDISettings) N2OCP() byte {
+	return s.ColorMode.N2OCP()
+}
+
+func (s CDISettings) DDX() byte {
+	return byte(s.BlackWhitePolarity)<<1 | s.ColorMode.DDX1()
+}
+
+func (s *seq) commonVoltageAndDataIntervalSetting(settings CDISettings) {
+	if s.err != nil {
+		return
+	}
+	s.sendCommand(CommandCDI)
+	s.sendData(settings.Flags())
 }
 
 type BoosterSoftStartSettings struct {
