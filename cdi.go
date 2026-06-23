@@ -1,5 +1,7 @@
 package epd7in5v2
 
+import "fmt"
+
 type HSyncInterval int
 
 const HSync HSyncInterval = 1
@@ -222,11 +224,15 @@ type CDISettings struct {
 	CommonVoltageDataInterval HSyncInterval
 }
 
-func (s CDISettings) Flags() []byte {
+func (s CDISettings) Flags() ([]byte, error) {
+	cdi, err := s.CDI()
+	if err != nil {
+		return nil, err
+	}
 	return []byte{
 		s.BDZ() << 7, s.BDV() << 4, s.N2OCP() << 3, s.DDX(),
-		//TODO: CDI
-	}
+		cdi,
+	}, nil
 }
 
 func (s CDISettings) BDZ() byte {
@@ -245,10 +251,28 @@ func (s CDISettings) DDX() byte {
 	return byte(s.BlackWhitePolarity)<<1 | s.ColorMode.DDX1()
 }
 
+const MaxCommonDataInterval = 17 * HSync
+const MinCommonDataInterval = 2 * HSync
+
+func (s CDISettings) CDI() (byte, error) {
+	if s.CommonVoltageDataInterval > MaxCommonDataInterval {
+		return 0, fmt.Errorf("common voltage data interval must not be greater than %s", MaxCommonDataInterval)
+	}
+	if s.CommonVoltageDataInterval < MinCommonDataInterval {
+		return 0, fmt.Errorf("common voltage data interval must not be smaller than %s", MinCommonDataInterval)
+	}
+	return byte(MaxCommonDataInterval - s.CommonVoltageDataInterval), nil
+}
+
 func (s *seq) commonVoltageAndDataIntervalSetting(settings CDISettings) {
 	if s.err != nil {
 		return
 	}
+	data, err := settings.Flags()
+	if err != nil {
+		s.err = err
+		return
+	}
 	s.sendCommand(CommandCDI)
-	s.sendData(settings.Flags())
+	s.sendData(data)
 }
