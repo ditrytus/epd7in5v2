@@ -94,6 +94,10 @@ func (e *Epd) Init() error {
 		Horizontal: ScreenWidth,
 		Vertical:   ScreenHeight,
 	})
+	s.dualSPIMode(DualSPIModeSettings{
+		MMInputPinEnabled:  false,
+		DualSPIModeEnabled: false,
+	})
 	s.commonVoltageAndDataIntervalSetting(CDISettings{
 		ColorMode: BlackWhiteSettings{
 			Refresh: DifferentialRefresh{
