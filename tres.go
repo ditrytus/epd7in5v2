@@ -45,12 +45,12 @@ func (s *seq) resolutionSetting(settings ResolutionSettings) {
 	if s.err != nil {
 		return
 	}
-	s.sendCommand(CommandTRES)
 	data, err := settings.Flags()
 	if s.err == nil && err != nil {
 		s.err = err
 		return
 	}
+	s.sendCommand(CommandTRES)
 	s.sendData(data)
 
 }

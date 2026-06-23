@@ -198,11 +198,11 @@ func (s *seq) powerSetting(
 	if s.err != nil {
 		return
 	}
-	s.sendCommand(CommandPWR)
 	data, err := settings.Flags()
 	if err != nil {
 		s.err = err
 		return
 	}
+	s.sendCommand(CommandPWR)
 	s.sendData(data)
 }
