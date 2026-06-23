@@ -162,6 +162,7 @@ func (e *Epd) InitFast() error {
 		TemperatureSource:  TemperatureSource_Register,
 		OutputClockAtCLPin: false,
 	})
+	s.forceTemperature(90 * Celsius)
 	return s.err
 }
 
