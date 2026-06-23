@@ -106,6 +106,10 @@ func (e *Epd) InitRegister() error {
 		BlackWhitePolarity:        BlackWhitePolarity_ZeroIsWhite,
 		CommonVoltageDataInterval: 10 * HSync,
 	})
+	s.setGateSourceNonOverlapPeriod(TCONSettings{
+		SourceToGate: 12 * TCONPeriod,
+		GateToSource: 12 * TCONPeriod,
+	})
 	return s.err
 }
 
