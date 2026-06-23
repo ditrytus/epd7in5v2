@@ -9,11 +9,27 @@ type BoosterSoftStartSettings struct {
 
 func (s BoosterSoftStartSettings) Flags() []byte {
 	return []byte{
-		s.PhaseA.Flags(),
-		s.PhaseB.Flags(),
-		s.PhaseC1.Flags(),
-		s.PhaseC2.Flags(),
+		s.BT_PHA(),
+		s.BT_PHB(),
+		s.BT_PHC1(),
+		s.BT_PHC2(),
 	}
+}
+
+func (s BoosterSoftStartSettings) BT_PHA() byte {
+	return s.PhaseA.Flags()
+}
+
+func (s BoosterSoftStartSettings) BT_PHB() byte {
+	return s.PhaseB.Flags()
+}
+
+func (s BoosterSoftStartSettings) BT_PHC1() byte {
+	return s.PhaseC1.Flags()
+}
+
+func (s BoosterSoftStartSettings) BT_PHC2() byte {
+	return s.PhaseC2.Flags()
 }
 
 type StartPeriod byte

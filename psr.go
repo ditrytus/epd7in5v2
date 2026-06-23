@@ -56,12 +56,31 @@ func NewDefaultPanelSettings() PanelSettings {
 }
 
 func (s PanelSettings) Flags() byte {
-	return byte(s.LookupTableSource)<<5 |
-		byte(s.ColorMode)<<4 |
-		byte(s.GateScanDirection)<<3 |
-		byte(s.SourceShiftDirection)<<2 |
-		boolToByte(s.BoosterEnabled)<<1 |
-		byte(s.SoftReset)
+	return s.REG()<<5 | s.KW_R()<<4 | s.UD()<<3 | s.SHL()<<2 | s.SHD_N()<<1 | s.RST_N()
+}
+
+func (s PanelSettings) REG() byte {
+	return byte(s.LookupTableSource)
+}
+
+func (s PanelSettings) KW_R() byte {
+	return byte(s.ColorMode)
+}
+
+func (s PanelSettings) UD() byte {
+	return byte(s.GateScanDirection)
+}
+
+func (s PanelSettings) SHL() byte {
+	return byte(s.SourceShiftDirection)
+}
+
+func (s PanelSettings) SHD_N() byte {
+	return boolToByte(s.BoosterEnabled)
+}
+
+func (s PanelSettings) RST_N() byte {
+	return byte(s.SoftReset)
 }
 
 func (s *seq) panelSetting(settings PanelSettings) {

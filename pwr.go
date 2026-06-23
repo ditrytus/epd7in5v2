@@ -100,27 +100,60 @@ func NewDefaultPowerSettings() PowerSettings {
 }
 
 func (ps PowerSettings) Flags() ([]byte, error) {
-	vg, err := gateVoltageFlags(ps.GateVoltage.High())
+	vg_lvl, err := ps.VG_LVL()
 	if err != nil {
 		return nil, fmt.Errorf("invalid gate voltage: %w", err)
 	}
-	vdh, err := voltageDrainFlag(ps.BlackWhiteVoltageDrain.High, VoltageDrainHighMin, VoltageDrainHighMax, VoltageDrainHighFlagBits)
+	vdh_lvl, err := ps.VDH_LVL()
 	if err != nil {
 		return nil, fmt.Errorf("invalid voltage drain high for black and white pixel: %w", err)
 	}
-	vdl, err := voltageDrainFlag(ps.BlackWhiteVoltageDrain.Low, VoltageDrainLowMin, VoltageDrainLowMax, VoltageDrainLowFlagBits)
+	vdl_lvl, err := ps.VDL_LVL()
 	if err != nil {
 		return nil, fmt.Errorf("invalid voltage drain low for black and white pixel: %w", err)
 	}
 	return []byte{
-		boolToByte(ps.BorderLowDropoutEnabled)<<4 |
-			byte(ps.SourceLowVoltagePower)<<2 |
-			byte(ps.SourcePower)<<1 |
-			byte(ps.GatePower),
-		byte(ps.OTPProgram)<<7 | byte(ps.CommonVoltageSlew)<<4 | vg,
-		vdh,
-		vdl,
+		ps.BD_EN()<<4 | ps.VSR_EN()<<2 | ps.VS_EN()<<1 | ps.VG_EN(),
+		ps.VPP_EN()<<7 | ps.VCOM_SLEW()<<4 | vg_lvl,
+		vdh_lvl,
+		vdl_lvl,
 	}, nil
+}
+
+func (ps PowerSettings) BD_EN() byte {
+	return boolToByte(ps.BorderLowDropoutEnabled)
+}
+
+func (ps PowerSettings) VSR_EN() byte {
+	return byte(ps.SourceLowVoltagePower)
+}
+
+func (ps PowerSettings) VS_EN() byte {
+	return byte(ps.SourcePower)
+}
+
+func (ps PowerSettings) VG_EN() byte {
+	return byte(ps.GatePower)
+}
+
+func (ps PowerSettings) VPP_EN() byte {
+	return byte(ps.OTPProgram)
+}
+
+func (ps PowerSettings) VCOM_SLEW() byte {
+	return byte(ps.CommonVoltageSlew)
+}
+
+func (ps PowerSettings) VG_LVL() (byte, error) {
+	return gateVoltageFlags(ps.GateVoltage.High())
+}
+
+func (ps PowerSettings) VDL_LVL() (byte, error) {
+	return voltageDrainFlag(ps.BlackWhiteVoltageDrain.Low, VoltageDrainLowMin, VoltageDrainLowMax, VoltageDrainLowFlagBits)
+}
+
+func (ps PowerSettings) VDH_LVL() (byte, error) {
+	return voltageDrainFlag(ps.BlackWhiteVoltageDrain.High, VoltageDrainHighMin, VoltageDrainHighMax, VoltageDrainHighFlagBits)
 }
 
 func gateVoltageFlags(v Voltage) (byte, error) {
