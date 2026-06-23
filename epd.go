@@ -50,7 +50,7 @@ func (e *Epd) TurnOn() error {
 	return s.err
 }
 
-func (e *Epd) InitRegister() error {
+func (e *Epd) Init() error {
 	s := &seq{e: e}
 	s.reset()
 	ps := NewDefaultPowerSettings()
@@ -109,6 +109,58 @@ func (e *Epd) InitRegister() error {
 	s.setGateSourceNonOverlapPeriod(TCONSettings{
 		SourceToGate: 12 * TCONPeriod,
 		GateToSource: 12 * TCONPeriod,
+	})
+	return s.err
+}
+
+func (e *Epd) InitFast() error {
+	s := &seq{e: e}
+	panelSettings := NewDefaultPanelSettings()
+	panelSettings.ColorMode = ColorMode_BlackWhite
+	s.panelSetting(panelSettings)
+	s.commonVoltageAndDataIntervalSetting(CDISettings{
+		ColorMode: BlackWhiteSettings{
+			Refresh: DifferentialRefresh{
+				CopyNewToOld: false,
+			},
+			Border: DrivenBehavior[BlackWhiteBorder]{
+				LookupTable: BlackWhiteBorder_BlackToWhite,
+			},
+		},
+		BlackWhitePolarity:        BlackWhitePolarity_ZeroIsWhite,
+		CommonVoltageDataInterval: 10 * HSync,
+	})
+	s.powerON()
+	s.boosterSoftStart(BoosterSoftStartSettings{
+		PhaseA: PhaseABSettings{
+			SoftStartPeriod: StartPeriod_10ms,
+			PhaseSettings: PhaseSettings{
+				DrivingStrength:   Strength_5,
+				MinGDROffDuration: OffDuration_6_58us,
+			},
+		},
+		PhaseB: PhaseABSettings{
+			SoftStartPeriod: StartPeriod_10ms,
+			PhaseSettings: PhaseSettings{
+				DrivingStrength:   Strength_5,
+				MinGDROffDuration: OffDuration_6_58us,
+			},
+		},
+		PhaseC1: PhaseCSettings{
+			DrivingStrength:   Strength_4,
+			MinGDROffDuration: OffDuration_0_27us,
+		},
+		PhaseC2: PhaseC2Settings{
+			Enabled: false,
+			PhaseCSettings: PhaseSettings{
+				DrivingStrength:   Strength_3,
+				MinGDROffDuration: OffDuration_6_58us,
+			},
+		},
+	})
+	s.cascadeSetting(CCSETSettings{
+		TemperatureSource:  TemperatureSource_Register,
+		OutputClockAtCLPin: false,
 	})
 	return s.err
 }
