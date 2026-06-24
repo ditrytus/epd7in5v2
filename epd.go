@@ -2,6 +2,7 @@ package epd7in5v2
 
 import (
 	"fmt"
+	"image"
 	"io"
 	"time"
 
@@ -167,6 +168,29 @@ func (e *Epd) InitFast() error {
 		OutputClockAtCLPin: false,
 	})
 	s.forceTemperature(90 * Celsius)
+	return s.err
+}
+
+func (e *Epd) InitPart() error {
+	s := &seq{e: e}
+	s.reset()
+	panelSettings := NewDefaultPanelSettings()
+	panelSettings.ColorMode = ColorMode_BlackWhite
+	s.panelSetting(panelSettings)
+	s.powerON()
+	s.cascadeSetting(CCSETSettings{
+		TemperatureSource:  TemperatureSource_Register,
+		OutputClockAtCLPin: false,
+	})
+	s.forceTemperature(110 * Celsius)
+	return s.err
+}
+
+func (e *Epd) ClearToWhite() error {
+	s := &seq{e: e}
+	s.displayStartTransmission(ImageBuffer_New, image.White)
+	s.displayStartTransmission(ImageBuffer_Old, image.Black)
+	s.displayRefresh()
 	return s.err
 }
 

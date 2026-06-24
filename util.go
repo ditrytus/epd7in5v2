@@ -62,3 +62,7 @@ func (s *seq) wait() {
 		s.err = fmt.Errorf("waiting for %s input pin timed out", s.e.busy.Name())
 	}
 }
+
+func (s *seq) turnOnDisplay() {
+
+}
