@@ -2,7 +2,6 @@ package epd7in5v2
 
 import (
 	"image"
-	"image/draw"
 )
 
 var ScreenBounds image.Rectangle
@@ -18,17 +17,12 @@ const (
 	ImageBuffer_Old ImageBuffer = CommandDTM2
 )
 
-func (s *seq) displayStartTransmission(buf ImageBuffer, img image.Image) {
+func (s *seq) displayStartTransmission(buf ImageBuffer, img *BlackAndWhiteImage) {
 	if s.err != nil {
 		return
 	}
 	s.sendCommand(Command(buf))
-	bwImage, ok := img.(*BlackAndWhiteImage)
-	if !ok {
-		bwImage = NewBlackAndWhiteImage(ScreenBounds)
-		draw.Draw(bwImage, bwImage.Rect, ScreenBounds, img.Bounds().Min, draw.Src)
-	}
-	s.sendImageData(bwImage, ScreenBounds)
+	s.sendImageData(img, ScreenBounds)
 }
 
 func (s *seq) sendImageData(image *BlackAndWhiteImage, bounds image.Rectangle) {

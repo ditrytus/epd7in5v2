@@ -3,6 +3,7 @@ package epd7in5v2
 import (
 	"image"
 	"image/color"
+	"image/draw"
 )
 
 type BlackAndWhiteColorModel struct {
@@ -40,6 +41,17 @@ func NewBlackAndWhiteImage(r image.Rectangle) *BlackAndWhiteImage {
 	}
 }
 
+func BlackAndWhiteImageFromImage(img image.Image, bounds image.Rectangle) *BlackAndWhiteImage {
+	bwImage, ok := img.(*BlackAndWhiteImage)
+	if ok {
+		bwImage = bwImage.SubImage(bounds).(*BlackAndWhiteImage)
+	} else {
+		bwImage = NewBlackAndWhiteImage(bounds)
+		draw.Draw(bwImage, bwImage.Rect, bounds, img.Bounds().Min, draw.Src)
+	}
+	return bwImage
+}
+
 func (p *BlackAndWhiteImage) ColorModel() color.Model {
 	return p.model
 
@@ -47,7 +59,6 @@ func (p *BlackAndWhiteImage) ColorModel() color.Model {
 
 func (p *BlackAndWhiteImage) Bounds() image.Rectangle {
 	return p.Rect
-
 }
 
 func (p *BlackAndWhiteImage) At(x, y int) color.Color {
@@ -106,5 +117,19 @@ func (p *BlackAndWhiteImage) SubImage(r image.Rectangle) image.Image {
 		Pix:    p.Pix[i:],
 		Stride: p.Stride,
 		Rect:   r,
+	}
+}
+
+func (p *BlackAndWhiteImage) Negative() *BlackAndWhiteImage {
+	pix := make([]byte, len(p.Pix))
+	copy(pix, p.Pix)
+	for i, b := range pix {
+		pix[i] = ^b
+	}
+	return &BlackAndWhiteImage{
+		Pix:    pix,
+		Stride: p.Stride,
+		Rect:   p.Rect,
+		model:  p.model,
 	}
 }

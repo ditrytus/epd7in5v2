@@ -187,9 +187,18 @@ func (e *Epd) InitPart() error {
 }
 
 func (e *Epd) ClearToWhite() error {
+	return e.DisplayImage(image.White)
+}
+
+func (e *Epd) ClearToBlack() error {
+	return e.DisplayImage(image.Black)
+}
+
+func (e *Epd) DisplayImage(img image.Image) error {
 	s := &seq{e: e}
-	s.displayStartTransmission(ImageBuffer_New, image.White)
-	s.displayStartTransmission(ImageBuffer_Old, image.Black)
+	bwImage := BlackAndWhiteImageFromImage(img, ScreenBounds)
+	s.displayStartTransmission(ImageBuffer_New, bwImage)
+	s.displayStartTransmission(ImageBuffer_Old, bwImage.Negative())
 	s.displayRefresh()
 	return s.err
 }
