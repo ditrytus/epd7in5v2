@@ -203,9 +203,42 @@ func (e *Epd) DisplayImage(img image.Image) error {
 	return s.err
 }
 
+func (e *Epd) DisplayPart(img image.Image, rect image.Rectangle) error {
+	s := &seq{e: e}
+	s.commonVoltageAndDataIntervalSetting(CDISettings{
+		ColorMode: BlackWhiteSettings{
+			Refresh: DifferentialRefresh{CopyNewToOld: true},
+			Border:  FloatBehavior[BlackWhiteBorder]{},
+		},
+		BlackWhitePolarity:        BlackWhitePolarity_ZeroIsBlack,
+		CommonVoltageDataInterval: 10 * HSync,
+	})
+	s.enterPartialMode()
+	s.setPartialWindow(rect, GateScan_InsideAndOutside)
+	bwImage := BlackAndWhiteImageFromImage(img, rect)
+	s.displayStartTransmission(ImageBuffer_Old, bwImage)
+	s.displayRefresh()
+	return s.err
+}
+
 func (e *Epd) DisplayRefresh() error {
 	s := &seq{e: e}
 	s.displayRefresh()
+	return s.err
+}
+
+func (e *Epd) Sleep() error {
+	s := &seq{e: e}
+	s.commonVoltageAndDataIntervalSetting(CDISettings{
+		ColorMode: BlackWhiteSettings{
+			Refresh: FullRefresh{},
+			Border:  FloatBehavior[BlackWhiteBorder]{},
+		},
+		BlackWhitePolarity:        BlackWhitePolarity_ZeroIsBlack,
+		CommonVoltageDataInterval: 10 * HSync,
+	})
+	s.powerOFF()
+	s.deepSleep()
 	return s.err
 }
 
@@ -231,5 +264,10 @@ func (s *seq) displayRefresh() {
 func (s *seq) powerON() {
 	s.sendCommand(CommandPON)
 	s.sleep(100 * time.Millisecond)
+	s.wait()
+}
+
+func (s *seq) powerOFF() {
+	s.sendCommand(CommandPOF)
 	s.wait()
 }

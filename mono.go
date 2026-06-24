@@ -42,13 +42,8 @@ func NewBlackAndWhiteImage(r image.Rectangle) *BlackAndWhiteImage {
 }
 
 func BlackAndWhiteImageFromImage(img image.Image, bounds image.Rectangle) *BlackAndWhiteImage {
-	bwImage, ok := img.(*BlackAndWhiteImage)
-	if ok {
-		bwImage = bwImage.SubImage(bounds).(*BlackAndWhiteImage)
-	} else {
-		bwImage = NewBlackAndWhiteImage(bounds)
-		draw.Draw(bwImage, bwImage.Rect, bounds, img.Bounds().Min, draw.Src)
-	}
+	bwImage := NewBlackAndWhiteImage(bounds)
+	draw.Draw(bwImage, bwImage.Rect, bounds, img.Bounds().Min, draw.Src)
 	return bwImage
 }
 

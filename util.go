@@ -1,8 +1,10 @@
 package epd7in5v2
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"image"
 	"time"
 
 	"periph.io/x/conn/v3/gpio"
@@ -65,4 +67,47 @@ func (s *seq) wait() {
 
 func (s *seq) turnOnDisplay() {
 
+}
+
+func (s *seq) enterPartialMode() {
+	s.sendCommand(CommandPTIN)
+}
+
+type GateScan byte
+
+const (
+	GateScan_Inside           GateScan = 0
+	GateScan_InsideAndOutside GateScan = 1
+)
+
+func (s *seq) setPartialWindow(rect image.Rectangle, scan GateScan) {
+	if s.err != nil {
+		return
+	}
+	if !rect.In(ScreenBounds) {
+		s.err = fmt.Errorf("partial window is not within screen bounds")
+		return
+	}
+	if rect.Min.X%8 != 0 || rect.Max.X%8 != 0 {
+		s.err = fmt.Errorf("partial window's horizontal coordinates must be a multiple of 8")
+		return
+	}
+	s.sendCommand(CommandPTL)
+	data := make([]byte, 0, 9)
+	binary.BigEndian.AppendUint16(data, uint16(rect.Min.X))
+	binary.BigEndian.AppendUint16(data, uint16(rect.Max.X))
+	binary.BigEndian.AppendUint16(data, uint16(rect.Min.Y))
+	binary.BigEndian.AppendUint16(data, uint16(rect.Max.Y))
+	data = append(data, byte(scan))
+	s.sendData(data)
+}
+
+const DeepSleepCheckCode byte = 0xA5
+
+func (s *seq) deepSleep() {
+	if s.err != nil {
+		return
+	}
+	s.sendCommand(CommandDSLP)
+	s.sendData([]byte{DeepSleepCheckCode})
 }

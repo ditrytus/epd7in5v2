@@ -22,7 +22,7 @@ func (s *seq) displayStartTransmission(buf ImageBuffer, img *BlackAndWhiteImage)
 		return
 	}
 	s.sendCommand(Command(buf))
-	s.sendImageData(img, ScreenBounds)
+	s.sendImageData(img, img.Bounds())
 }
 
 func (s *seq) sendImageData(image *BlackAndWhiteImage, bounds image.Rectangle) {
