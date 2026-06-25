@@ -46,10 +46,6 @@ const VoltageDrainHighMin = 2.4 * Volt
 const VoltageDrainHighMax = 15 * Volt
 
 const VoltageDrainHighFlagBits = 6
-const VoltageDrainLowMin = -VoltageDrainHighMax
-const VoltageDrainLowMax = -VoltageDrainHighMin
-
-const VoltageDrainLowFlagBits = VoltageDrainHighFlagBits
 
 type VoltageRange struct {
 	High Voltage
@@ -149,7 +145,7 @@ func (ps PowerSettings) VG_LVL() (byte, error) {
 }
 
 func (ps PowerSettings) VDL_LVL() (byte, error) {
-	return voltageDrainFlag(-ps.BlackWhiteVoltageDrain.Low, VoltageDrainLowMin, VoltageDrainLowMax, VoltageDrainLowFlagBits)
+	return voltageDrainFlag(-ps.BlackWhiteVoltageDrain.Low, VoltageDrainHighMin, VoltageDrainHighMax, VoltageDrainHighFlagBits)
 }
 
 func (ps PowerSettings) VDH_LVL() (byte, error) {
