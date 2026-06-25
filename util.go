@@ -35,7 +35,7 @@ func (s *seq) sendCommand(cmd Command) {
 		return
 	}
 	if err := s.e.spi.Tx([]byte{byte(cmd)}, nil); err != nil {
-		err = fmt.Errorf("failed to send command %s over SPI: %w", cmd, err)
+		s.err = fmt.Errorf("failed to send command %d over SPI: %w", cmd, err)
 	}
 }
 
@@ -60,13 +60,11 @@ func (s *seq) wait() {
 	if s.err != nil {
 		return
 	}
-	if !s.e.busy.WaitForEdge(time.Second * 10) {
-		s.err = fmt.Errorf("waiting for %s input pin timed out", s.e.busy.Name())
+	for s.e.busy.Read() == gpio.Low {
+		if !s.e.busy.WaitForEdge(time.Second * 10) {
+			s.err = fmt.Errorf("waiting for %s input pin timed out", s.e.busy.Name())
+		}
 	}
-}
-
-func (s *seq) turnOnDisplay() {
-
 }
 
 func (s *seq) enterPartialMode() {
@@ -94,10 +92,10 @@ func (s *seq) setPartialWindow(rect image.Rectangle, scan GateScan) {
 	}
 	s.sendCommand(CommandPTL)
 	data := make([]byte, 0, 9)
-	binary.BigEndian.AppendUint16(data, uint16(rect.Min.X))
-	binary.BigEndian.AppendUint16(data, uint16(rect.Max.X))
-	binary.BigEndian.AppendUint16(data, uint16(rect.Min.Y))
-	binary.BigEndian.AppendUint16(data, uint16(rect.Max.Y))
+	data = binary.BigEndian.AppendUint16(data, uint16(rect.Min.X))
+	data = binary.BigEndian.AppendUint16(data, uint16(rect.Max.X-1))
+	data = binary.BigEndian.AppendUint16(data, uint16(rect.Min.Y))
+	data = binary.BigEndian.AppendUint16(data, uint16(rect.Max.Y-1))
 	data = append(data, byte(scan))
 	s.sendData(data)
 }

@@ -46,7 +46,7 @@ func (s *seq) reset() {
 func (e *Epd) TurnOn() error {
 	s := &seq{e: e}
 	s.displayRefresh()
-	s.sleep(10 * time.Millisecond)
+	s.sleep(100 * time.Millisecond)
 	s.wait()
 	return s.err
 }
@@ -56,8 +56,8 @@ func (e *Epd) Init() error {
 	s.reset()
 	ps := NewDefaultPowerSettings()
 	ps.BlackWhiteVoltageDrain = VoltageRange{
-		High: 20 * Volt,
-		Low:  20 * Volt,
+		High: 15 * Volt,
+		Low:  -15 * Volt,
 	}
 	s.powerSetting(ps)
 	s.boosterSoftStart(BoosterSoftStartSettings{
@@ -120,6 +120,7 @@ func (e *Epd) Init() error {
 
 func (e *Epd) InitFast() error {
 	s := &seq{e: e}
+	s.reset()
 	panelSettings := NewDefaultPanelSettings()
 	panelSettings.ColorMode = ColorMode_BlackWhite
 	s.panelSetting(panelSettings)
@@ -259,6 +260,8 @@ func (e *Epd) closeSPI() error {
 
 func (s *seq) displayRefresh() {
 	s.sendCommand(CommandDRF)
+	s.sleep(100 * time.Millisecond)
+	s.wait()
 }
 
 func (s *seq) powerON() {

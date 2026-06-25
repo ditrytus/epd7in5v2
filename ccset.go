@@ -28,6 +28,6 @@ func (s *seq) cascadeSetting(settings CCSETSettings) {
 	if s.err != nil {
 		return
 	}
-	s.sendCommand(CommandTCON)
+	s.sendCommand(CommandCCSET)
 	s.sendData(settings.Flags())
 }

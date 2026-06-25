@@ -37,7 +37,7 @@ const (
 	CommandPTL    = 0x90 // Partial Window
 	CommandPTIN   = 0x91 // Partial In
 	CommandPTOUT  = 0x92 // Partial Out
-	CommandCCSET  = 0xE0 // Program Mode
+	CommandCCSET  = 0xE0 // Cascade Settings
 	CommandPWS    = 0xE3 // Power Saving
 	CommandLVSEL  = 0xE4 // LVD Voltage Select
 	CommandTSSET  = 0xE5 // Force Temperature

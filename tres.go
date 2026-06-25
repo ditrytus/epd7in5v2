@@ -29,15 +29,15 @@ func (rs ResolutionSettings) Flags() ([]byte, error) {
 	if rs.Vertical < MinVerticalRes {
 		return nil, fmt.Errorf("vertical resolution must not be lower than %d", MinVerticalRes)
 	}
-	if rs.Horizontal > MaxHorizontalRes {
+	if rs.Horizontal > MaxVerticalRes {
 		return nil, fmt.Errorf("vertical resolution must not be greater than %d", MaxVerticalRes)
 	}
 	if rs.Horizontal%8 != 0 {
 		return nil, fmt.Errorf("horizontal resolution must be divisible by 8")
 	}
 	flags := make([]byte, 0, 4)
-	binary.BigEndian.AppendUint16(flags, uint16(rs.Horizontal))
-	binary.BigEndian.AppendUint16(flags, uint16(rs.Vertical))
+	flags = binary.BigEndian.AppendUint16(flags, uint16(rs.Horizontal))
+	flags = binary.BigEndian.AppendUint16(flags, uint16(rs.Vertical))
 	return flags, nil
 }
 

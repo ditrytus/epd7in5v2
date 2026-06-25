@@ -49,16 +49,16 @@ func (s BlackWhiteRedSettings) BDV(polarity BlackWhitePolarity) byte {
 
 var cdi_bdv_kwr = map[BlackWhitePolarity]map[BlackWhiteRedBorder]byte{
 	BlackWhitePolarity_ZeroIsBlack: {
-		BlackWhiteRedBorder_Border: 0b00,
-		BlackWhiteRedBorder_Red:    0b01,
-		BlackWhiteRedBorder_White:  0b10,
-		BlackWhiteRedBorder_Black:  0b11,
-	},
-	BlackWhitePolarity_ZeroIsWhite: {
 		BlackWhiteRedBorder_Black:  0b00,
 		BlackWhiteRedBorder_White:  0b01,
 		BlackWhiteRedBorder_Red:    0b10,
 		BlackWhiteRedBorder_Border: 0b11,
+	},
+	BlackWhitePolarity_ZeroIsWhite: {
+		BlackWhiteRedBorder_Border: 0b00,
+		BlackWhiteRedBorder_Red:    0b01,
+		BlackWhiteRedBorder_White:  0b10,
+		BlackWhiteRedBorder_Black:  0b11,
 	},
 }
 
@@ -95,16 +95,16 @@ func (s BlackWhiteSettings) BDV(polarity BlackWhitePolarity) byte {
 
 var cdi_bdy_kw = map[BlackWhitePolarity]map[BlackWhiteBorder]byte{
 	BlackWhitePolarity_ZeroIsBlack: {
-		BlackWhiteBorder_Border:       0b00,
-		BlackWhiteBorder_BlackToWhite: 0b01,
-		BlackWhiteBorder_WhiteToBlack: 0b10,
-		BlackWhiteBorder_BlackToBlack: 0b11,
-	},
-	BlackWhitePolarity_ZeroIsWhite: {
 		BlackWhiteBorder_BlackToBlack: 0b00,
 		BlackWhiteBorder_WhiteToBlack: 0b01,
 		BlackWhiteBorder_BlackToWhite: 0b10,
 		BlackWhiteBorder_Border:       0b11,
+	},
+	BlackWhitePolarity_ZeroIsWhite: {
+		BlackWhiteBorder_Border:       0b00,
+		BlackWhiteBorder_BlackToWhite: 0b01,
+		BlackWhiteBorder_WhiteToBlack: 0b10,
+		BlackWhiteBorder_BlackToBlack: 0b11,
 	},
 }
 
@@ -207,7 +207,7 @@ type DrivenBehavior[T ColorModeBorder] struct {
 }
 
 func (d DrivenBehavior[T]) BDZ() byte {
-	return 1
+	return 0
 }
 
 func (d DrivenBehavior[T]) BDV(f func(border T) byte) byte {
@@ -230,7 +230,7 @@ func (s CDISettings) Flags() ([]byte, error) {
 		return nil, err
 	}
 	return []byte{
-		s.BDZ() << 7, s.BDV() << 4, s.N2OCP() << 3, s.DDX(),
+		s.BDZ()<<7 | s.BDV()<<4 | s.N2OCP()<<3 | s.DDX(),
 		cdi,
 	}, nil
 }
@@ -256,10 +256,10 @@ const MinCommonDataInterval = 2 * HSync
 
 func (s CDISettings) CDI() (byte, error) {
 	if s.CommonVoltageDataInterval > MaxCommonDataInterval {
-		return 0, fmt.Errorf("common voltage data interval must not be greater than %s", MaxCommonDataInterval)
+		return 0, fmt.Errorf("common voltage data interval must not be greater than %d", MaxCommonDataInterval)
 	}
 	if s.CommonVoltageDataInterval < MinCommonDataInterval {
-		return 0, fmt.Errorf("common voltage data interval must not be smaller than %s", MinCommonDataInterval)
+		return 0, fmt.Errorf("common voltage data interval must not be smaller than %d", MinCommonDataInterval)
 	}
 	return byte(MaxCommonDataInterval - s.CommonVoltageDataInterval), nil
 }

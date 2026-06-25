@@ -94,7 +94,7 @@ func NewDefaultPowerSettings() PowerSettings {
 		GateVoltage:             SymmetricVoltageRange(20 * Volt),
 		BlackWhiteVoltageDrain: VoltageRange{
 			High: 14 * Volt,
-			Low:  14 * Volt,
+			Low:  -14 * Volt,
 		},
 	}
 }
@@ -185,7 +185,7 @@ func voltageDrainFlag(v Voltage, min, max Voltage, bits uint) (byte, error) {
 	delta := max - min
 	totalSteps := math.Pow(2, float64(bits)) - 1
 	step := float64(delta) / totalSteps
-	flag, fraction := math.Modf(math.Mod(float64(v-min), step))
+	flag, fraction := math.Modf(float64(v-min) / step)
 	if fraction != 0 {
 		return 0, fmt.Errorf("voltage must be a multiple of %f", step)
 	}

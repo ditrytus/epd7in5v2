@@ -13,8 +13,8 @@ func init() {
 type ImageBuffer byte
 
 const (
-	ImageBuffer_New ImageBuffer = CommandDTM1
-	ImageBuffer_Old ImageBuffer = CommandDTM2
+	ImageBuffer_Old ImageBuffer = CommandDTM1
+	ImageBuffer_New ImageBuffer = CommandDTM2
 )
 
 func (s *seq) displayStartTransmission(buf ImageBuffer, img *BlackAndWhiteImage) {

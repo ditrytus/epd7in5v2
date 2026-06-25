@@ -17,8 +17,8 @@ const (
 type VerticalDirection byte
 
 const (
-	VerticalDirection_Up   VerticalDirection = 0
-	VerticalDirection_Down VerticalDirection = 1
+	VerticalDirection_Down VerticalDirection = 0
+	VerticalDirection_Up   VerticalDirection = 1
 )
 
 type HorizontalDirection byte

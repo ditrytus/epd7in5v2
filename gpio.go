@@ -70,7 +70,7 @@ func (s *seq) setPin(pin gpio.PinOut, level gpio.Level) {
 		return
 	}
 	if err := pin.Out(level); err != nil {
-		err = fmt.Errorf("failed to set %s to %s", pin.Name(), gpio.High)
+		s.err = fmt.Errorf("failed to set %s to %s", pin.Name(), gpio.High)
 	}
 }
 
