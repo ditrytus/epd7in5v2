@@ -44,7 +44,7 @@ func tconPeriodFlag(period time.Duration, prop string) (byte, error) {
 		return 0, fmt.Errorf("%s must not be greater than %s", prop, MaxSourceGateNonOverlapPeriod)
 	}
 	if period%TCONPeriodConfigStep > 0 {
-		return 0, fmt.Errorf("%s must be a multiple of %s", TCONPeriodConfigStep)
+		return 0, fmt.Errorf("%s must be a multiple of %s", prop, TCONPeriodConfigStep)
 	}
 	return byte((period - MinSourceGateNonOverlapPeriod) / TCONPeriodConfigStep), nil
 }
