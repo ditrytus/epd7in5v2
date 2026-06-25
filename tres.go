@@ -29,7 +29,7 @@ func (rs ResolutionSettings) Flags() ([]byte, error) {
 	if rs.Vertical < MinVerticalRes {
 		return nil, fmt.Errorf("vertical resolution must not be lower than %d", MinVerticalRes)
 	}
-	if rs.Horizontal > MaxVerticalRes {
+	if rs.Vertical > MaxVerticalRes {
 		return nil, fmt.Errorf("vertical resolution must not be greater than %d", MaxVerticalRes)
 	}
 	if rs.Horizontal%8 != 0 {

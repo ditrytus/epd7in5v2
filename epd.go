@@ -198,8 +198,8 @@ func (e *Epd) ClearToBlack() error {
 func (e *Epd) DisplayImage(img image.Image) error {
 	s := &seq{e: e}
 	bwImage := BlackAndWhiteImageFromImage(img, ScreenBounds)
-	s.displayStartTransmission(ImageBuffer_New, bwImage)
-	s.displayStartTransmission(ImageBuffer_Old, bwImage.Negative())
+	s.displayStartTransmission(ImageBuffer_Old, bwImage)
+	s.displayStartTransmission(ImageBuffer_New, bwImage.Negative())
 	s.displayRefresh()
 	return s.err
 }
@@ -217,7 +217,7 @@ func (e *Epd) DisplayPart(img image.Image, rect image.Rectangle) error {
 	s.enterPartialMode()
 	s.setPartialWindow(rect, GateScan_InsideAndOutside)
 	bwImage := BlackAndWhiteImageFromImage(img, rect)
-	s.displayStartTransmission(ImageBuffer_Old, bwImage)
+	s.displayStartTransmission(ImageBuffer_New, bwImage)
 	s.displayRefresh()
 	return s.err
 }

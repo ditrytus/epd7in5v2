@@ -63,6 +63,7 @@ func (s *seq) wait() {
 	for s.e.busy.Read() == gpio.Low {
 		if !s.e.busy.WaitForEdge(time.Second * 10) {
 			s.err = fmt.Errorf("waiting for %s input pin timed out", s.e.busy.Name())
+			return
 		}
 	}
 }

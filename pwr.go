@@ -149,7 +149,7 @@ func (ps PowerSettings) VG_LVL() (byte, error) {
 }
 
 func (ps PowerSettings) VDL_LVL() (byte, error) {
-	return voltageDrainFlag(ps.BlackWhiteVoltageDrain.Low, VoltageDrainLowMin, VoltageDrainLowMax, VoltageDrainLowFlagBits)
+	return voltageDrainFlag(-ps.BlackWhiteVoltageDrain.Low, VoltageDrainLowMin, VoltageDrainLowMax, VoltageDrainLowFlagBits)
 }
 
 func (ps PowerSettings) VDH_LVL() (byte, error) {

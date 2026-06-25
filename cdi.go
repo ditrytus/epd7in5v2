@@ -248,7 +248,7 @@ func (s CDISettings) N2OCP() byte {
 }
 
 func (s CDISettings) DDX() byte {
-	return byte(s.BlackWhitePolarity)<<1 | s.ColorMode.DDX1()
+	return s.ColorMode.DDX1()<<1 | byte(s.BlackWhitePolarity)
 }
 
 const MaxCommonDataInterval = 17 * HSync
