@@ -9,18 +9,17 @@ import (
 	"periph.io/x/conn/v3/spi"
 )
 
-// ---------------------------------------------------------------------------
-// busRecorder captures the ordered command/data stream that the driver emits
-// over SPI. Whether a Tx is a command or data is determined by the level of
-// the DC pin at the moment of the transfer (DC low = command, DC high = data),
-// exactly as the controller interprets it.
-// ---------------------------------------------------------------------------
-
+// recTx is a single recorded SPI transfer, tagged with whether it carried a
+// command (DC low) or data (DC high).
 type recTx struct {
 	command bool
 	data    []byte
 }
 
+// busRecorder captures the ordered command/data stream that the driver emits
+// over SPI. Whether a Tx is a command or data is determined by the level of the
+// DC pin at the moment of the transfer (DC low = command, DC high = data),
+// exactly as the controller interprets it.
 type busRecorder struct {
 	dcLevel gpio.Level
 	txs     []recTx
@@ -57,11 +56,8 @@ func (r *busRecorder) ops() []op {
 	return ops
 }
 
-// ---------------------------------------------------------------------------
-// fakePin implements gpio.PinIO (so it can be used as PinIn, PinOut, or
-// registered with gpioreg).
-// ---------------------------------------------------------------------------
-
+// fakePin implements gpio.PinIO so it can be used as a PinIn, a PinOut, or
+// registered with gpioreg.
 type fakePin struct {
 	name string
 	num  int
@@ -118,10 +114,7 @@ func (p *fakePin) WaitForEdge(t time.Duration) bool {
 func (p *fakePin) Pull() gpio.Pull        { return gpio.PullNoChange }
 func (p *fakePin) DefaultPull() gpio.Pull { return gpio.PullNoChange }
 
-// ---------------------------------------------------------------------------
 // fakeSPI implements spi.Conn and records transfers into a busRecorder.
-// ---------------------------------------------------------------------------
-
 type fakeSPI struct {
 	rec   *busRecorder
 	txErr error
@@ -148,10 +141,6 @@ func (c *fakeCloser) Close() error {
 	c.closed = true
 	return c.err
 }
-
-// ---------------------------------------------------------------------------
-// Harness
-// ---------------------------------------------------------------------------
 
 // newTestEPD wires an *Epd to fake pins and a fake SPI bus. By default BUSY
 // reads High (ready) so wait() returns immediately, and sleeps are no-ops.
