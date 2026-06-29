@@ -14,7 +14,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Println()
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
@@ -23,7 +23,7 @@ func run() (err error) {
 	imageFile := flag.String("image", "", "input image to display on the screen")
 	flag.Parse()
 
-	if imageFile == nil {
+	if *imageFile == "" {
 		return fmt.Errorf("missing required flag --image")
 	}
 
@@ -42,7 +42,6 @@ func run() (err error) {
 		return err
 	}
 
-	bwImg := epd7in5v2.BlackAndWhiteImageFromImage(img, img.Bounds())
 	screen := epd7in5v2.NewEPD()
 	defer func() {
 		if closeErr := screen.Close(); closeErr != nil {
@@ -56,10 +55,10 @@ func run() (err error) {
 	if err := screen.Init(); err != nil {
 		return err
 	}
-	if err := screen.ClearToWhite(); err != nil {
+	if err := screen.DisplayImage(img); err != nil {
 		return err
 	}
-	if err := screen.DisplayImage(bwImg); err != nil {
+	if err := screen.Sleep(); err != nil {
 		return err
 	}
 
@@ -67,6 +66,9 @@ func run() (err error) {
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	<-sig
 
+	if err := screen.Init(); err != nil {
+		return err
+	}
 	if err := screen.ClearToWhite(); err != nil {
 		return err
 	}

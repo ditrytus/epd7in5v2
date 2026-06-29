@@ -57,6 +57,9 @@ func (e *Epd) GPIOInit() error {
 }
 
 func (e *Epd) closeGPIO() error {
+	if e.pwr == nil && e.dc == nil && e.rst == nil {
+		return nil
+	}
 	return tryAll(
 		"failed to close GPIO; some pins might have been left on HIGH",
 		e.pwr.Out(gpio.Low),

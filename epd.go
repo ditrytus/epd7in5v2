@@ -255,6 +255,9 @@ func (e *Epd) Close() error {
 }
 
 func (e *Epd) closeSPI() error {
+	if e.spiCloser == nil {
+		return nil
+	}
 	if err := e.spiCloser.Close(); err != nil {
 		return fmt.Errorf("failed to close SPI port: %w", err)
 	}
