@@ -11,6 +11,10 @@ import (
 	"periph.io/x/conn/v3/physic"
 	"periph.io/x/conn/v3/spi"
 	"periph.io/x/conn/v3/spi/spireg"
+	// Registers the host GPIO/SPI drivers (e.g. bcm283x on the Raspberry Pi) so
+	// driverreg.Init() can find them; without this no pins are registered and
+	// gpioreg.ByName returns nil for every pin.
+	_ "periph.io/x/host/v3"
 )
 
 const (
