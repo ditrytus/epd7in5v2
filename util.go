@@ -53,6 +53,10 @@ func (s *seq) sleep(dur time.Duration) {
 	if s.err != nil {
 		return
 	}
+	if s.e.sleepFn != nil {
+		s.e.sleepFn(dur)
+		return
+	}
 	time.Sleep(dur)
 }
 

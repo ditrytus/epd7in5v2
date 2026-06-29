@@ -43,7 +43,7 @@ func NewBlackAndWhiteImage(r image.Rectangle) *BlackAndWhiteImage {
 
 func BlackAndWhiteImageFromImage(img image.Image, bounds image.Rectangle) *BlackAndWhiteImage {
 	bwImage := NewBlackAndWhiteImage(bounds)
-	draw.Draw(bwImage, bwImage.Rect, bounds, img.Bounds().Min, draw.Src)
+	draw.Draw(bwImage, bwImage.Rect, img, img.Bounds().Min, draw.Src)
 	return bwImage
 }
 

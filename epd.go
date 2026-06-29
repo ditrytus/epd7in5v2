@@ -22,10 +22,13 @@ type Epd struct {
 	busy      gpio.PinIn
 	spi       spi.Conn
 	spiCloser io.Closer
+	// sleepFn performs blocking delays. It is overridable for testing; when nil
+	// it falls back to time.Sleep.
+	sleepFn func(time.Duration)
 }
 
 func NewEPD() *Epd {
-	return &Epd{}
+	return &Epd{sleepFn: time.Sleep}
 }
 
 func (e *Epd) Reset() error {

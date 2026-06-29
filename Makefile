@@ -1,0 +1,13 @@
+.PHONY: test test-cover vet build
+
+build:
+	go build ./...
+
+vet:
+	go vet ./...
+
+test:
+	go test ./...
+
+test-cover:
+	go test -cover ./...

@@ -181,8 +181,12 @@ func voltageDrainFlag(v Voltage, min, max Voltage, bits uint) (byte, error) {
 	delta := max - min
 	totalSteps := math.Pow(2, float64(bits)) - 1
 	step := float64(delta) / totalSteps
-	flag, fraction := math.Modf(float64(v-min) / step)
-	if fraction != 0 {
+	exact := float64(v-min) / step
+	flag := math.Round(exact)
+	// Compare against the nearest step with tolerance: float32 voltages cannot
+	// represent multiples of `step` exactly, but genuinely off-grid voltages are
+	// at least ~0.5 steps away, so a small epsilon cleanly separates the two.
+	if math.Abs(exact-flag) > 1e-3 {
 		return 0, fmt.Errorf("voltage must be a multiple of %f", step)
 	}
 	return byte(flag), nil
