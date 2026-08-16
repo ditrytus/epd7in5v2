@@ -53,6 +53,7 @@ func (s BoosterSoftStartSettings) BT_PHC2() byte {
 // StartPeriod is how long a booster soft-start phase lasts.
 type StartPeriod byte
 
+// The soft-start periods the controller supports.
 const (
 	StartPeriod_10ms StartPeriod = 0b00 // 10 ms soft-start period
 	StartPeriod_20ms StartPeriod = 0b01 // 20 ms soft-start period
@@ -64,6 +65,7 @@ const (
 // ramps the voltage faster at the cost of a larger current spike.
 type Strength byte
 
+// The eight driving strengths, weakest to strongest.
 const (
 	Strength_1 Strength = 0b000 // weakest driving strength
 	Strength_2 Strength = 0b001 // driving strength 2 of 8
@@ -79,6 +81,7 @@ const (
 // within a switching cycle. A longer off duration means a gentler ramp.
 type OffDuration byte
 
+// The gate driver off durations, shortest to longest.
 const (
 	OffDuration_0_27us OffDuration = 0b000 // 0.27 us
 	OffDuration_0_34us OffDuration = 0b001 // 0.34 us

@@ -112,8 +112,8 @@ func TestDisplayImageInvertsSecondPlane(t *testing.T) {
 	e, rec := newTestEPD()
 	// A non-uniform image: left half black, right half white.
 	img := image.NewGray(ScreenBounds)
-	for y := 0; y < int(ScreenHeight); y++ {
-		for x := 0; x < int(ScreenWidth); x++ {
+	for y := range int(ScreenHeight) {
+		for x := range int(ScreenWidth) {
 			if x >= int(ScreenWidth)/2 {
 				img.Set(x, y, color.White)
 			}

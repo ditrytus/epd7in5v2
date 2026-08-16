@@ -261,17 +261,17 @@ var gateVoltageToFlagsMap = map[Voltage]byte{
 
 // voltageDrainFlag converts a drain voltage into its register value, given the
 // field's range and width.
-func voltageDrainFlag(v Voltage, min, max Voltage, bits uint) (byte, error) {
-	if v < min {
-		return 0, fmt.Errorf("voltage must not be lower than %s", min)
+func voltageDrainFlag(v Voltage, lo, hi Voltage, bits uint) (byte, error) {
+	if v < lo {
+		return 0, fmt.Errorf("voltage must not be lower than %s", lo)
 	}
-	if v > max {
-		return 0, fmt.Errorf("voltage must not be greater than %s", max)
+	if v > hi {
+		return 0, fmt.Errorf("voltage must not be greater than %s", hi)
 	}
-	delta := max - min
+	delta := hi - lo
 	totalSteps := math.Pow(2, float64(bits)) - 1
 	step := float64(delta) / totalSteps
-	exact := float64(v-min) / step
+	exact := float64(v-lo) / step
 	flag := math.Round(exact)
 	// Compare against the nearest step with tolerance: float32 voltages cannot
 	// represent multiples of `step` exactly, but genuinely off-grid voltages are

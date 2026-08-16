@@ -140,11 +140,13 @@ func (s *seq) setPartialWindow(rect image.Rectangle, scan GateScan) {
 		return
 	}
 	s.sendCommand(CommandPTL)
+	// The conversions below are guarded by the rect.In(ScreenBounds) check
+	// above: every coordinate is within 0..800, so none can overflow uint16.
 	data := make([]byte, 0, 9)
-	data = binary.BigEndian.AppendUint16(data, uint16(rect.Min.X))
-	data = binary.BigEndian.AppendUint16(data, uint16(rect.Max.X-1))
-	data = binary.BigEndian.AppendUint16(data, uint16(rect.Min.Y))
-	data = binary.BigEndian.AppendUint16(data, uint16(rect.Max.Y-1))
+	data = binary.BigEndian.AppendUint16(data, uint16(rect.Min.X))   //nolint:gosec // G115: bounded by ScreenBounds
+	data = binary.BigEndian.AppendUint16(data, uint16(rect.Max.X-1)) //nolint:gosec // G115: bounded by ScreenBounds
+	data = binary.BigEndian.AppendUint16(data, uint16(rect.Min.Y))   //nolint:gosec // G115: bounded by ScreenBounds
+	data = binary.BigEndian.AppendUint16(data, uint16(rect.Max.Y-1)) //nolint:gosec // G115: bounded by ScreenBounds
 	data = append(data, byte(scan))
 	s.sendData(data)
 }

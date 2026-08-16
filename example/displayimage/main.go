@@ -1,3 +1,9 @@
+// Command displayimage shows a PNG on a Waveshare 7.5 inch e-Paper V2 panel.
+//
+// It draws the image, waits for SIGINT or SIGTERM, then clears the screen to
+// white and puts the panel to sleep before exiting.
+//
+//	displayimage --image beach.png
 package main
 
 import (

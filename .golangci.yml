@@ -1,0 +1,80 @@
+version: "2"
+
+# Linter selection favours correctness over style. Every linter enabled here
+# reports zero issues on a clean tree, so a finding means something is actually
+# wrong rather than merely unfashionable.
+#
+# Deliberately NOT enabled: mnd (a display driver is register constants),
+# exhaustruct (the settings structs rely on zero values and NewDefaultX),
+# err113 (would demand sentinel errors throughout), funlen and cyclop (the
+# Init* sequences are long because they mirror the datasheet), and the
+# whitespace family (wsl, nlreturn, whitespace).
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - durationcheck    # suspicious time.Duration arithmetic
+    - errorlint        # wrapping and comparison mistakes
+    - forcetypeassert  # unchecked type assertions
+    - gocritic         # broad correctness and style checks
+    - gosec            # security-adjacent mistakes
+    - intrange         # for i := 0; i < n; i++  ->  for range n
+    - misspell         # typos, including in doc comments
+    - nilerr           # returning nil when err is non-nil
+    - prealloc         # slices that could be preallocated
+    - revive           # golint's successor
+    - unconvert        # redundant type conversions
+    - usestdlibvars    # use stdlib constants over string literals
+    - wastedassign     # assignments never read
+
+  settings:
+    revive:
+      # golangci-lint runs only the rules listed here, so this is revive's
+      # default set with var-naming removed. The lower layer of this package
+      # deliberately mirrors the datasheet's identifiers - BT_PHA, VDH_LVL,
+      # ColorMode_BlackWhite - so that the code can be read line by line
+      # against the programming guide. See doc.go.
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: empty-block
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: exported
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+        - name: unused-parameter
+        - name: var-declaration
+
+  exclusions:
+    # No `comments` preset: every exported element in this package carries a doc
+    # comment, and revive's exported/package-comments rules are what keep it
+    # that way as the code changes.
+    rules:
+      # Test helpers assert on types they construct themselves a line earlier.
+      - path: _test\.go$
+        linters:
+          - forcetypeassert
+      # The test doubles implement periph.io interfaces, where the parameter
+      # names document the contract even when a fake ignores them. A handful of
+      # tests also assert nothing beyond "this does not panic", so never touch
+      # their *testing.T.
+      - path: _test\.go$
+        text: unused-parameter
+        linters:
+          - revive
+
+formatters:
+  enable:
+    - gofmt

@@ -41,10 +41,10 @@ func (s *seq) displayStartTransmission(buf ImageBuffer, img *BlackAndWhiteImage)
 	s.sendImageData(img, img.Bounds())
 }
 
-// sendImageData clocks out the packed rows of image that fall inside bounds,
+// sendImageData clocks out the packed rows of img that fall inside bounds,
 // padding each row with zero bytes when bounds ends mid-byte.
-func (s *seq) sendImageData(image *BlackAndWhiteImage, bounds image.Rectangle) {
-	subImage := image.SubImage(bounds).(*BlackAndWhiteImage)
+func (s *seq) sendImageData(img *BlackAndWhiteImage, bounds image.Rectangle) {
+	subImage := img.subImage(bounds)
 	missingBytes := (subImage.Rect.Max.X - bounds.Max.X) / 8
 	for y := subImage.Rect.Min.Y; y < subImage.Rect.Max.Y; y++ {
 		from := subImage.PixOffset(subImage.Rect.Min.X, y)

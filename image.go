@@ -162,6 +162,12 @@ func (p *BlackAndWhiteImage) PixOffset(x, y int) int {
 // [BlackAndWhiteImage.ColorModel] returns nil on it and
 // [BlackAndWhiteImage.Set] panics. [BlackAndWhiteImage.SetBit] still works.
 func (p *BlackAndWhiteImage) SubImage(r image.Rectangle) image.Image {
+	return p.subImage(r)
+}
+
+// subImage is [BlackAndWhiteImage.SubImage] with the concrete type retained, so
+// callers inside this package need no type assertion.
+func (p *BlackAndWhiteImage) subImage(r image.Rectangle) *BlackAndWhiteImage {
 	r = r.Intersect(p.Rect)
 	if r.Empty() {
 		return &BlackAndWhiteImage{}
