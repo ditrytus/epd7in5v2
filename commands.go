@@ -1,7 +1,17 @@
 package epd7in5v2
 
+// Command is a single-byte controller opcode. It is sent with the DC pin low;
+// any parameter bytes that follow are sent with DC high.
+//
+// Commands that take parameters have a matching settings type in this package -
+// [PanelSettings] for CommandPSR, [PowerSettings] for CommandPWR, and so on.
 type Command byte
 
+// Controller opcodes, named as in the panel programming guide. The trailing
+// comment expands each abbreviation.
+//
+// Not every opcode listed here is used by this driver; the full set is kept so
+// that the datasheet can be followed without a second lookup table.
 const (
 	CommandPSR    = 0x00 // Panel Setting
 	CommandPWR    = 0x01 // Power Setting
