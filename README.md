@@ -1,5 +1,11 @@
 # epd7in5v2
 
+[![CI](https://github.com/ditrytus/epd7in5v2/actions/workflows/ci.yml/badge.svg)](https://github.com/ditrytus/epd7in5v2/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/ditrytus/epd7in5v2.svg)](https://pkg.go.dev/github.com/ditrytus/epd7in5v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ditrytus/epd7in5v2)](https://goreportcard.com/report/github.com/ditrytus/epd7in5v2)
+[![Go](https://img.shields.io/github/go-mod/go-version/ditrytus/epd7in5v2)](go.mod)
+[![License](https://img.shields.io/github/license/ditrytus/epd7in5v2)](LICENSE)
+
 A pure-Go driver for the **Waveshare 7.5" e-Paper display V2** (800×480, black & white),
 built on [periph.io](https://periph.io) and talking straight to the panel's
 GD7965/UC8179-class controller over SPI.
@@ -128,8 +134,9 @@ sudo usermod -aG spi,gpio "$USER"     # log out and back in
 go get github.com/ditrytus/epd7in5v2
 ```
 
-Requires Go 1.26 or newer. The package is pure Go — no cgo, no vendor C library — so it
-cross-compiles from any host:
+Requires Go 1.25 or newer — the floor is set by `periph.io/x/conn/v3`, not by this
+package. It is pure Go — no cgo, no vendor C library — so it cross-compiles from any
+host:
 
 ```bash
 GOOS=linux GOARCH=arm   GOARM=7 go build ./example/displayimage   # Pi Zero 2 W (32-bit OS)
@@ -394,11 +401,21 @@ interprets it. Tests then assert on the decoded stream of `(command, params)` op
 so an init test checks the actual byte sequence the panel would see.
 
 ```bash
+make check        # everything CI runs: build, vet, lint, test
 make test         # go test ./...
 make test-cover   # go test -cover ./...   → ~96 % of statements
 make vet          # go vet ./...
+make lint         # golangci-lint run ./...
+make lint-fix     # golangci-lint run --fix ./...
 make build        # go build ./...
+make tools        # install the pinned golangci-lint
 ```
+
+Lint configuration lives in [`.golangci.yml`](.golangci.yml) and is tuned for correctness
+over style — every enabled linter reports zero issues on a clean tree, so a finding means
+something is genuinely wrong. Notably `var-naming` is off: the lower layer deliberately
+mirrors the datasheet's identifiers (`BT_PHA`, `VDH_LVL`, `ColorMode_BlackWhite`) so the
+code can be read line by line against the programming guide.
 
 ## Project layout
 
