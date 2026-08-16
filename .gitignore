@@ -1,1 +1,14 @@
+# IDE
 /.idea
+
+# macOS
+.DS_Store
+
+# Editor backups
+*~
+
+# Krita sources for example artwork; only the exported PNG is tracked
+*.kra
+
+# Large working source image behind example/beach.png
+/example/IMG_9908.png
