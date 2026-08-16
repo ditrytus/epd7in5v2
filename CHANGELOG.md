@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/ditrytus/epd7in5v2/compare/v0.1.0...v0.1.1) (2026-08-16)
+
+
+### Documentation
+
+* remove the Go Report Card badge ([#3](https://github.com/ditrytus/epd7in5v2/issues/3)) ([edf327a](https://github.com/ditrytus/epd7in5v2/commit/edf327a3a65134ab1b42cc87d2de0afe54e4c805))
+
 ## 0.1.0 (2026-08-16)
 
 
