@@ -1,0 +1,43 @@
+version: 2
+
+updates:
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # release-please reads Conventional Commits. Dependabot's default subject
+    # ("Bump x from a to b") is not one, so it would be skipped entirely when
+    # the changelog is generated. This prefix makes it "chore(deps): bump ...",
+    # which lands in the changelog without forcing a version bump.
+    commit-message:
+      prefix: chore
+      include: scope
+    # Patch and minor are grouped separately on purpose: the auto-merge workflow
+    # keys off the update type, and a group mixing the two reports as minor,
+    # which would never auto-merge. Majors are always their own PR.
+    groups:
+      patch:
+        patterns: ["*"]
+        update-types: [patch]
+      minor:
+        patterns: ["*"]
+        update-types: [minor]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      patch:
+        patterns: ["*"]
+        update-types: [patch]
+      minor:
+        patterns: ["*"]
+        update-types: [minor]
