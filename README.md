@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/ditrytus/epd7in5v2/actions/workflows/ci.yml/badge.svg)](https://github.com/ditrytus/epd7in5v2/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/ditrytus/epd7in5v2.svg)](https://pkg.go.dev/github.com/ditrytus/epd7in5v2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ditrytus/epd7in5v2)](https://goreportcard.com/report/github.com/ditrytus/epd7in5v2)
 [![Go](https://img.shields.io/github/go-mod/go-version/ditrytus/epd7in5v2)](go.mod)
 [![License](https://img.shields.io/github/license/ditrytus/epd7in5v2)](LICENSE)
 
