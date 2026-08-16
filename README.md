@@ -40,7 +40,8 @@ screen.Sleep()
 - [Testing](#testing)
 - [Project layout](#project-layout)
 - [Troubleshooting](#troubleshooting)
-- [Status and license](#status-and-license)
+- [Status](#status)
+- [License](#license)
 
 ---
 
@@ -428,13 +429,19 @@ example/displayimage/
 | Ghosting builds up | Expected with partial refresh. Run a periodic full `Init()` + `DisplayImage`. |
 | Image fades after hours | The panel was left powered instead of asleep. Call `Sleep()` when done. |
 
-## Status and license
+## Status
 
 Working and covered by tests, but young — the API is not frozen and may change.
 
-No licence has been chosen yet, so the code is under default copyright. Add a `LICENSE`
-file before publishing or depending on it.
+## License
 
-Datasheets and the driver HAT schematic come from the
+Released under the MIT License — see [LICENSE](LICENSE).
+
+This is an independent implementation written against the panel programming guide. It is
+not a translation of Waveshare's C driver and contains no vendor code; the command
+opcodes and register layouts it uses are facts about the controller hardware. Datasheets
+and the driver HAT schematic come from the
 [Waveshare 7.5inch e-Paper HAT wiki](https://www.waveshare.com/wiki/7.5inch_e-Paper_HAT).
-Hardware access is provided by [periph.io](https://periph.io).
+
+Hardware access is provided by [periph.io](https://periph.io), which is licensed under
+Apache 2.0.
